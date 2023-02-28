@@ -1,7 +1,7 @@
 ESPHome Power Meter w/ RTC and Display
 ======================================
 
-This is the extended version of my [Power Meter](https://github.com/zenzay/esphome-projects/tree/main/power-meter). This version adds a RTC module and E-Ink Display
+This is the extended version of my ESPHome Power Meter. This version adds a RTC module, an E-Ink Display and a humble push button.
 
 Yet another version of a non-invasive Power Meter for use in [Home Assistant](https://www.home-assistant.io/), using the [Pulse Meter](https://esphome.io/components/sensor/pulse_meter.html) component in [ESPHome](https://esphome.io/).
 
