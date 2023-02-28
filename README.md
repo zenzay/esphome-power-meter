@@ -13,7 +13,7 @@ To test the accuracy of the Power Meter, I created a simple Arduino Sketch to si
 
 *Please bear in mind that this is work in progress and a lot of the code is quite kludgy.*
 
-Note: You can find an extended version with RTC and E-Ink Display [here](../power-meter-2/).
+Note: You can find an extended version with RTC and E-Ink Display [here](https://github.com/zenzay/esphome-power-meter/blob/extended).
 
 Components
 -----------
