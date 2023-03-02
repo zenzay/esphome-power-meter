@@ -3,9 +3,9 @@ ESPHome Power Meter w/ RTC and Display
 
 This is the extended version of my ESPHome Power Meter. This version adds a RTC module, an E-Ink Display and a humble push button.
 
-I've added a RTC Module in order to not miss time events (on the hour, midnight and so on). This way I can be reasonable sure to not miss anything when I'm fiddling with Home Assistant or my router is down. I probably shouldn't rely on Cron to track time events, but then again, this whole thing should probably be a custom component (but I repeat myself).
+The RTC module is definitely more precise than the onboard RTC, and by having it, we only need to sync with the other time source, HA or SNTP.
 
-This version also adds a 2.9" E-Ink Display and a push button. The button anables turning pages on the display manually. Main page is a - sort of - status page and the subsequent pages shows some graphs and stuff.  To make it easier for myself - not wanting to draw every single line on the display - I've created some transparent backgrounds in GIMP, and just pop those on the display before drawing the rest.
+This version also adds a 2.9" E-Ink Display and a push button. The button enables turning pages on the display manually. Main page is a - sort of - status page and the subsequent pages shows some graphs and stuff.  To make it easier for myself - not wanting to draw every single line on the display - I've created some transparent backgrounds in GIMP, and just pop those on the display before drawing the rest.
 
 Side note: Achieving transparency when drawing images on displays in ESPHome can be tricky. I often ended up with exporting PNGs from GIMP that, to the naked eye, looked like they were fully transparent, but they were apparently not 100% and turned up black on the display. What seemed to fix it was to fill all areas, that I wanted transparent, with white and subsequently Magic Select the areas and delete them.
 
