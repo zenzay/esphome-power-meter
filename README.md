@@ -1,6 +1,8 @@
 ESPHome Power Meter w/ RTC and Display
 ======================================
 
+## Not ready for release ##
+
 This is the extended version of my ESPHome Power Meter. This version adds a RTC module, an E-Ink Display and a humble push button.
 
 The RTC module is definitely more precise than the onboard RTC, and by having it, we only need to sync with the other time source, HA or SNTP.
