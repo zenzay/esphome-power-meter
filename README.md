@@ -35,7 +35,7 @@ Wiring
 
 | LED  | ESP32 |
 |-----:|-------|
-|   D0 |   17  |
+|   D0 |   27  |
 |  VCC |  VCC  |
 |  GND |  GND  |
 
