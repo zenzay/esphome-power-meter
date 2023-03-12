@@ -10,7 +10,7 @@ Side note: Achieving transparency when drawing images on displays in ESPHome can
 Components
 -----------
 
-* Wemos D1 Mini ESP32 (any ESP32 will do. An ESP8266 *should* work too, but it's not as fast and has fewer pins)
+* Wemos D1 Mini ESP32. Any ESP32 should work. An ESP8266 *might* work, but you'll have fewer pins available.
 * [LM393 Photodiode Sensor module](https://www.mysensors.org/build/light-lm393)
 * [Waveshare 2.9" E-Ink Display](https://www.waveshare.com/2.9inch-e-paper-module.htm)
 * [WS2818 LED](https://randomnerdtutorials.com/guide-for-ws2812b-addressable-rgb-led-strip-with-arduino/)
