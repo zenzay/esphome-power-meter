@@ -11,7 +11,7 @@ substitutions:
   project_name: zenzay.power_meter
   pulse_rate: '1000.0'
   currency: 'DKK'
-  pulse_pin '26'
+  pulse_pin: '26'
   led_pin: '27'
   ha_price_sensor: 'nordpool_kwh_dk2_dkk_4_095_025'
   update_interval: '60'
