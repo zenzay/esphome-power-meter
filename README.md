@@ -16,8 +16,6 @@ To test the accuracy of the Power Meter, I created a simple Arduino Sketch to si
 
 *Please bear in mind that this hasn't been tested extensively and I take absolutely no responsibility for any suprisingly large electricity bills*
 
-You can find an 'extended' version with Real Time Clock module and 2.9" E-Ink Display [here](https://github.com/zenzay/esphome-power-meter/tree/extended).
-
 Components
 -----------
 
