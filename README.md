@@ -7,6 +7,8 @@ This is the extended version of my ESPHome Power Meter. This version adds an E-I
 
 Side note: Achieving transparency when drawing images on displays in ESPHome can be tricky. I often ended up with exporting PNGs from GIMP that, to the naked eye, looked like they were fully transparent, but they were apparently not 100% and turned up black on the display. What seemed to fix it was to fill all areas, that I wanted transparent, with white and subsequently Magic Select the areas and delete them.
 
+Note: Put the pm* images in the same folder as ESPHome.
+
 Components
 -----------
 
