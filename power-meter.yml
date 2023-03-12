@@ -415,8 +415,8 @@ time:
   # I know that the RTC on the module is way more accurate than the internal RTC, but we'll have to syncronize with another time source (HA or SNTP) anyway
   # Afaik ESPHome syncronizes with the external time source every 15 minutes. This should be good enough not to let the internal RTC drift too much.
 
+# interval containing a single lambda action that runs every second... just for fun.. nah bro, seriously, listen, it's fo' real, check it out...
 interval:
-  # an lambda action that runs every second... just for fun.. nah bro, seriously, listen, it's fo' real, check it out...
   - interval: 1s
     then:
       lambda: |-
@@ -567,8 +567,7 @@ script:
           // id(op_flag) += $flag_update_sensors;
         }
         last_pulse_ms = now;    // remember last pulse milliseconds
-
-
+        
   # set_rgb_light script
   # it just sets red or green according to power_status binary sensor
   # should do something using percentages of consumptions in relation to problem power level
