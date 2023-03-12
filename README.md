@@ -16,7 +16,7 @@ To test the accuracy of the Power Meter, I created a simple Arduino Sketch to si
 Components
 -----------
 
-* An ESP32. I'm using a Wemos D1 Mini ESP32, but any ESP32 will do. An ESP8266 *should* work too.
+* An ESP32. I'm using a Wemos D1 Mini ESP32, but any ESP32 will do. An ESP8266 *might* work too, if you change pin designations.
 * [LM393 Photodiode Sensor module](https://www.mysensors.org/build/light-lm393)
 * [WS2818 LED](https://randomnerdtutorials.com/guide-for-ws2812b-addressable-rgb-led-strip-with-arduino/)
 
