@@ -13,6 +13,7 @@ Components
 * Wemos D1 Mini ESP32 (any ESP32 will do. An ESP8266 *should* work too, but it's not as fast and has fewer pins)
 * [LM393 Photodiode Sensor module](https://www.mysensors.org/build/light-lm393)
 * [Waveshare 2.9" E-Ink Display](https://www.waveshare.com/2.9inch-e-paper-module.htm)
+* [WS2818 LED](https://randomnerdtutorials.com/guide-for-ws2812b-addressable-rgb-led-strip-with-arduino/)
 * [Push Button](https://www.switchelectronics.co.uk/black-microminiature-5mm-momentary-off-on-push-button-spst-0-5a)
 
 Wiring
@@ -37,6 +38,13 @@ Wiring
 |    A0  |   NC  |
 |   VCC  |  VCC  |
 |   GND  |  GND  |
+
+#### WS2818 LED ####
+| LED  | ESP32 |
+|-----:|-------|
+|   D0 |   27  |
+|  VCC |  VCC  |
+|  GND |  GND  |
 
 #### Push Button ####
 |  PIN | ESP32 |
