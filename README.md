@@ -3,7 +3,7 @@ ESPHome Power Meter w/ E-Ink Display
 
 ## Not ready for release ##
 
-This is the extended version of my ESPHome Power Meter. This version adds an E-Ink Display and a humble push button. The button enables turning pages on the display manually. Main page is a - sort of - status page and the subsequent pages shows some graphs and stuff.  To make it easier for myself - not wanting to draw every single line on the display - I've created some transparent backgrounds in GIMP, and just pop those on the display before drawing the rest.
+This is the 'extended' version of my ESPHome Power Meter. This version adds an E-Ink Display and a humble push button. The button enables turning pages on the display manually. Main page is a - sort of - status page and the subsequent pages shows some graphs and stuff.  To make it easier for myself - not wanting to draw every single line on the display - I've created some transparent backgrounds in GIMP, and just pop those on the display before drawing the rest.
 
 Note 1: The display code is quite messy and really should be rewritten.
 
@@ -18,7 +18,6 @@ Components
 * Wemos D1 Mini ESP32. Any ESP32 should work. An ESP8266 *might* work, but you'll have fewer pins available.
 * [LM393 Photodiode Sensor module](https://www.mysensors.org/build/light-lm393)
 * [Waveshare 2.9" E-Ink Display](https://www.waveshare.com/2.9inch-e-paper-module.htm)
-* [WS2818 LED](https://randomnerdtutorials.com/guide-for-ws2812b-addressable-rgb-led-strip-with-arduino/)
 * [Push Button](https://www.switchelectronics.co.uk/black-microminiature-5mm-momentary-off-on-push-button-spst-0-5a)
 
 Wiring
@@ -43,13 +42,6 @@ Wiring
 |    A0  |   NC  |
 |   VCC  |  VCC  |
 |   GND  |  GND  |
-
-#### WS2818 LED ####
-| LED  | ESP32 |
-|-----:|-------|
-|   D0 |   27  |
-|  VCC |  VCC  |
-|  GND |  GND  |
 
 #### Push Button ####
 |  PIN | ESP32 |
