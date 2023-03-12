@@ -38,7 +38,6 @@ esphome:
     name: $project_name
     version: '0.8.8'
 
-
 esp32:
   board: nodemcu-32s
   framework:
@@ -505,9 +504,6 @@ interval:
 
           id(op_flag) = 0;         // making sure the flag operations are one-shot
         }
-
-
-
 
 # Using intervals with a duration of 1 second can have a drawback though: Actions might happen up to a second late.
 # In the bigger scheme of things, this might not mean much, but it's annoying. Let's say you reset the total count at midnight on the 1st of the month.
