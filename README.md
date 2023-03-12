@@ -18,7 +18,7 @@ Components
 
 * An ESP32. I'm using a Wemos D1 Mini ESP32, but any ESP32 will do. An ESP8266 *should* work too.
 * LM393 Photodiode Sensor module
-* A RGB LED (WS2818)
+* A RGB LED.
 
 Wiring
 -------
