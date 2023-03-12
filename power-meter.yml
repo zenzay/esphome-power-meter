@@ -11,6 +11,8 @@ substitutions:
   project_name: zenzay.power_meter
   pulse_rate: '1000.0'
   currency: 'DKK'
+  pulse_pin '26'
+  led_pin: '27'
   ha_price_sensor: 'nordpool_kwh_dk2_dkk_4_095_025'
   update_interval: '60'
   flag_update_sensors: '1'
@@ -229,7 +231,7 @@ number:
 light:
   - platform: neopixelbus
     variant: WS2812
-    pin: GPIO14
+    pin: led_pin
     num_leds: 1
     type: GRB
     #name: "Device Light"
@@ -313,7 +315,7 @@ sensor:
     device_class: power
     icon: mdi:flash-outline
     accuracy_decimals: 0
-    pin: GPIO26
+    pin: $pulse_pin
     internal_filter_mode: EDGE
     internal_filter: 100ms
     # 3600 ms = 1000 W with a pulse rate of 1000, so with a 100ms filter we should be able to report 36000 W.
