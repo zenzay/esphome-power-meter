@@ -1,9 +1,6 @@
 ESPHome Power Meter
 ====================
 
-## A Release version is not quite ready yet. A few bugs to get rid off first. ##
-
-
 ### Yet another version of a non-invasive Power Meter for use in [Home Assistant](https://www.home-assistant.io/), using the [Pulse Meter](https://esphome.io/components/sensor/pulse_meter.html) component in [ESPHome](https://esphome.io/). ###
 
 I've used [Home Assistant Glow](https://github.com/klaasnicolaas/home-assistant-glow) for a while without problems. I decided that it would be cool to also have the ESP track costs as well. That way I could do away with Rieman Sum and Utility Meter integrations in HA. 
@@ -19,18 +16,26 @@ To test the accuracy of the Power Meter, I created a simple Arduino Sketch to si
 Components
 -----------
 
-* Wemos D1 Mini ESP32 (any ESP32 will do. An ESP8266 *should* work too, but it's not as fast and has fewer pins)
+* An ESP32. I'm using a Wemos D1 Mini ESP32, but any ESP32 will do. An ESP8266 *should* work too.
 * LM393 Photodiode Sensor module
-
+* A RGB LED (WS2818)
 
 Wiring
 -------
 
 [LM393 Photodiode Sensor module](https://www.mysensors.org/build/light-lm393)
-| BOARD PIN | ESP32 PIN |
-|----------:|-----------|
-|       D0  |       26  |
-|       A0  |       NC  |
-|      VCC  |      VCC  |
-|      GND  |      GND  |
+| MODULE | ESP32 |
+|-------:|-------|
+|    D0  |   26  |
+|    A0  |   NC  |
+|   VCC  |  VCC  |
+|   GND  |  GND  |
+
+[WS2818 LED](https://randomnerdtutorials.com/guide-for-ws2812b-addressable-rgb-led-strip-with-arduino/)
+
+| LED  | ESP32 |
+|-----:|-------|
+|   D0 |   17  |
+|  VCC |  VCC  |
+|  GND |  GND  |
 
