@@ -17,13 +17,14 @@ Components
 -----------
 
 * An ESP32. I'm using a Wemos D1 Mini ESP32, but any ESP32 will do. An ESP8266 *should* work too.
-* LM393 Photodiode Sensor module
-* A RGB LED.
+* [LM393 Photodiode Sensor module](https://www.mysensors.org/build/light-lm393)
+* [WS2818 LED](https://randomnerdtutorials.com/guide-for-ws2812b-addressable-rgb-led-strip-with-arduino/)
+
 
 Wiring
 -------
 
-[LM393 Photodiode Sensor module](https://www.mysensors.org/build/light-lm393)
+#### LM393 Photodiode module ####
 | MODULE | ESP32 |
 |-------:|-------|
 |    D0  |   26  |
@@ -31,8 +32,7 @@ Wiring
 |   VCC  |  VCC  |
 |   GND  |  GND  |
 
-[WS2818 LED](https://randomnerdtutorials.com/guide-for-ws2812b-addressable-rgb-led-strip-with-arduino/)
-
+#### WS2818 LED ####
 | LED  | ESP32 |
 |-----:|-------|
 |   D0 |   27  |
