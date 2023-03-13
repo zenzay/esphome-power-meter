@@ -3,6 +3,13 @@ ESPHome Power Meter w/ E-Ink Display
 
 ## Not ready for release ##
 
+#### Status Page ####
+![pm_page_1](./assets/pm-page-1.jpg)
+#### Daily Usage Graph ####
+![pm_page_2](./assets/pm-page-2.jpg)
+#### Daily Cost Graph ####
+![pm_page_3](./assets/pm-page-3.jpg)
+
 This is the 'extended' version of my ESPHome Power Meter. This version adds an E-Ink Display and a humble push button. The button enables turning pages on the display manually. Main page is a - sort of - status page and the subsequent pages shows some graphs and stuff.  To make it easier for myself - not wanting to draw every single line on the display - I've created some transparent backgrounds in GIMP, and just pop those on the display before drawing the rest.
 
 Note 1: The display code is quite messy and really should be rewritten.
