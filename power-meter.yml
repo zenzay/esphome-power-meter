@@ -554,6 +554,10 @@ script:
 
   # set_power_led script
   # set the colour of led from green to red according to power consumption related to power problem level
+  # using HSV color space and converts to RGB before setting color
+  # is also messes a bit with the scales as I don't consider 50% power usage worthy of a yellow warning color, so it uses the following color scales:
+  # 0-79% power = green to yellow
+  # 80-100% power = yellow to red
   - id: set_power_led_script
     mode: restart
     then:
