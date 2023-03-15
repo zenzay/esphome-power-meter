@@ -2,18 +2,19 @@
 #
 # Power Meter with Cost Tracking.
 #
-# ​ Sic biscuitus disintegratum ​
+# ​Sic biscuitus disintegratum
 
 substitutions:
-  device_name: power-meter
-  friendly_name: 'Power Meter'
+  device_name: power-meter-2
+  friendly_name: 'Power Meter 2'
   device_description: 'Power Meter with Cost Tracking'
-  project_name: zenzay.power_meter
+  project_name: zenzay.power_meter_2
   pulse_rate: '1000.0'
   currency: 'DKK'
   pulse_pin: '26'
-  led_pin: '14'
-  ha_price_sensor: 'nordpool_kwh_dk2_dkk_4_095_025'
+  led_pin: '17'
+  ha_price_sensor: 'el_cost_price'
+  # ha_price_sensor: 'nordpool_kwh_dk2_dkk_4_095_025'
   update_interval: '60'
   flag_update_sensors: '1'
   flag_reset_total: '4'
@@ -39,7 +40,7 @@ esphome:
     version: '0.8.9'
 
 esp32:
-  board: nodemcu-32s
+  board: wemos_d1_mini32
   framework:
     type: arduino
 
@@ -48,6 +49,7 @@ logger:
 api:
 
 ota:
+  password: "cdd9139ba1d8b64906b038eeafef6e67"
 
 wifi:
   ssid: !secret wifi_ssid
@@ -570,9 +572,9 @@ script:
         //}
         auto call = id(power_led).turn_on();
         if (perc < 50) {
-          call.set_rgb(1, parts, 0);
-        } else if (perc > 50) {
           call.set_rgb(parts, 1, 0);
+        } else if (perc > 50) {
+          call.set_rgb(1, parts, 0);
         } else {
           call.set_rgb(1, 1, 0);
         }
