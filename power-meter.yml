@@ -5,16 +5,15 @@
 # ​Sic biscuitus disintegratum
 
 substitutions:
-  device_name: power-meter-2
-  friendly_name: 'Power Meter 2'
+  device_name: power-meter
+  friendly_name: 'Power Meter'
   device_description: 'Power Meter with Cost Tracking'
-  project_name: zenzay.power_meter_2
+  project_name: zenzay.power_meter
   pulse_rate: '1000.0'
   currency: 'DKK'
   pulse_pin: '26'
   led_pin: '17'
-  ha_price_sensor: 'el_cost_price'
-  # ha_price_sensor: 'nordpool_kwh_dk2_dkk_4_095_025'
+  ha_price_sensor: 'nordpool_kwh_dk2_dkk_4_095_025'
   update_interval: '60'
   flag_update_sensors: '1'
   flag_reset_total: '4'
@@ -49,7 +48,6 @@ logger:
 api:
 
 ota:
-  password: "cdd9139ba1d8b64906b038eeafef6e67"
 
 wifi:
   ssid: !secret wifi_ssid
@@ -546,7 +544,7 @@ script:
           id(cost_now_sensor).publish_state(id(cost_now));
           if ( id(power_led_switch).state )
           {
-            id(set_power_led_script)->execute( id(power_pulse_meter).state / id(power_problem_level).state * 100 );
+            id(set_power_led_script).execute();
           }
           // if you uncomment the following you'll also update the rest of the sensors at each pulse (in the interval).
           // id(op_flag) += $flag_update_sensors;
@@ -558,24 +556,61 @@ script:
   # set the colour of led from green to red according to power consumption related to power problem level
   - id: set_power_led_script
     mode: restart
-    parameters:
-      perc: int
     then:
       lambda: |-
-        float parts = (perc > 50) ? (1-((perc-50)/50)) : perc/50;
-        // uncomment for a short 'blink' at each pulse
-        //if (id(power_led).current_values.is_on())
-        //{
-        //  auto call = id(power_led).turn_off();
-        //  call.perform();
-        //  delay(50);
-        //}
-        auto call = id(power_led).turn_on();
-        if (perc < 50) {
-          call.set_rgb(parts, 1, 0);
-        } else if (perc > 50) {
-          call.set_rgb(1, parts, 0);
-        } else {
-          call.set_rgb(1, 1, 0);
+        const float s = 0.8;
+        const float v = 0.5;
+        const float b = 0.0;
+        int i;
+        float r, g, h, p, q, t;
+        float f = 100;
+        if (id(power_pulse_meter).state < id(power_problem_level).state)
+        {
+          f = id(power_pulse_meter).state * 100 / id(power_problem_level).state;
         }
+        if (f >= 80) {
+           h = (100 - f) * 3;
+        } else {
+          h = 120 - (f / 80 * 60);
+        }
+        h /= 60; // sector 0 to 5
+        i = floor(h);
+          f = h - i;            // factorial part of h
+          p = v * ( 1 - s );
+          q = v * ( 1 - s * f );
+          t = v * ( 1 - s * ( 1 - f ) );
+          switch( i ) {
+              case 0:
+                  r = v;
+                  g = t;
+                  // b = p;
+                  break;
+              case 1:
+                  r = q;
+                  g = v;
+                  // b = p;
+                  break;
+              case 2:
+                  r = p;
+                  g = v;
+                  // b = t;
+                  break;
+              case 3:
+                  r = p;
+                  g = q;
+                  // b = v;
+                  break;
+              case 4:
+                  r = t;
+                  g = p;
+                  // b = v;
+                  break;
+              default:      // case 5:
+                  r = v;
+                  g = p;
+                  // b = q;
+                  break;
+          }
+        auto call = id(power_led).turn_on();
+        call.set_rgb(r, g, b);
         call.perform();
