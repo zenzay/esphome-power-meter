@@ -5,15 +5,16 @@
 # ​Sic biscuitus disintegratum
 
 substitutions:
-  device_name: power-meter
-  friendly_name: 'Power Meter'
+  device_name: power-meter-2
+  friendly_name: 'Power Meter 2'
   device_description: 'Power Meter with Cost Tracking'
-  project_name: zenzay.power_meter
+  project_name: zenzay.power_meter_2
   pulse_rate: '1000.0'
   currency: 'DKK'
   pulse_pin: '26'
   led_pin: '17'
-  ha_price_sensor: 'nordpool_kwh_dk2_dkk_4_095_025'
+  ha_price_sensor: 'el_cost_price'
+  # ha_price_sensor: 'nordpool_kwh_dk2_dkk_4_095_025'
   update_interval: '60'
   flag_update_sensors: '1'
   flag_reset_total: '4'
@@ -48,6 +49,7 @@ logger:
 api:
 
 ota:
+  password: "cdd9139ba1d8b64906b038eeafef6e67"
 
 wifi:
   ssid: !secret wifi_ssid
@@ -234,7 +236,7 @@ light:
     #name: "Power LED
     internal: True
     id: power_led
-    default_transition_length: 0s
+    default_transition_length: 0.1s
     color_correct: [50%, 50%, 50%]
     restore_mode: ALWAYS_OFF
 
@@ -247,6 +249,7 @@ switch:
     turn_on_action:
       lambda: |-
         id(power_led_switch).publish_state(true);
+        id(set_power_led_script).execute();
     turn_off_action:
       lambda: |-
         id(power_led_switch).publish_state(false);
@@ -564,8 +567,8 @@ script:
     mode: restart
     then:
       lambda: |-
-        const float s = 1.0;    // saturation. 0-1. we're setting it as a const as we don't need to change it
-        const float v = 0.5;    // value. 0-1. 0=Black, 1=White
+        const float s = 1.0;    // saturation (purity). [0-1]
+        const float v = 0.5;    // brightness. [0-1]
         int i;
         float r, g, b, h, p, q, t;
         float f = 100;
@@ -578,7 +581,6 @@ script:
         } else {
           h = 120 - (f / 80 * 60);
         }
-        // following is converting HSV to RGB
         h /= 60; // sector 0 to 5
         i = floor(h);
         f = h - i;            // factorial part of h
@@ -617,6 +619,14 @@ script:
             b = q;
             break;
         }
+        //if (id(power_led).current_values.is_on())
+        //{
+        //  auto call = id(power_led).turn_off();
+        //  call.perform();
+        //  delay(50);
+        //}
         auto call = id(power_led).turn_on();
+        call.set_brightness(0.4);
         call.set_rgb(r, g, b);
         call.perform();
+
