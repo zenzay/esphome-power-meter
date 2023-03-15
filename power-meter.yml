@@ -558,15 +558,16 @@ script:
   # is also messes a bit with the scales as I don't consider 50% power usage worthy of a yellow warning color, so it uses the following color scales:
   # 0-79% power = green to yellow
   # 80-100% power = yellow to red
+  # also: we don't actually need the blue color, but I'm leaving it in anyway.
+  # the algoritm used can be found here: https://www.cs.rit.edu/~ncs/color/t_convert.html
   - id: set_power_led_script
     mode: restart
     then:
       lambda: |-
-        const float s = 0.8;
-        const float v = 0.5;
-        const float b = 0.0;
+        const float s = 1.0;    // saturation. 0-1. we're setting it as a const as we don't need to change it
+        const float v = 0.5;    // value. 0-1. 0=Black, 1=White
         int i;
-        float r, g, h, p, q, t;
+        float r, g, b, h, p, q, t;
         float f = 100;
         if (id(power_pulse_meter).state < id(power_problem_level).state)
         {
@@ -588,32 +589,32 @@ script:
           case 0:
             r = v;
             g = t;
-            // b = p;
+            b = p;
             break;
           case 1:
             r = q;
             g = v;
-            // b = p;
+            b = p;
             break;
           case 2:
             r = p;
             g = v;
-            // b = t;
+            b = t;
             break;
           case 3:
             r = p;
             g = q;
-            // b = v;
+            b = v;
             break;
           case 4:
             r = t;
             g = p;
-            // b = v;
+            b = v;
             break;
           default:      // case 5:
             r = v;
             g = p;
-            // b = q;
+            b = q;
             break;
         }
         auto call = id(power_led).turn_on();
