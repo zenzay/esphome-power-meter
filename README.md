@@ -35,7 +35,7 @@ Wiring
 #### WS2818 LED ####
 | LED  | ESP32 |
 |-----:|-------|
-|   D0 |   27  |
+|   D0 |   17  |
 |  VCC |  VCC  |
 |  GND |  GND  |
 
