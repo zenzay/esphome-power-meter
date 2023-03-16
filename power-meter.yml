@@ -1,8 +1,8 @@
-# Power Meter v0.8.9
+# Power Meter v0.9.0
 #
 # Power Meter with Cost Tracking.
 #
-# ​Sic biscuitus disintegratum
+# ​ Sic biscuitus disintegratum ​
 
 substitutions:
   device_name: power-meter-2
@@ -37,10 +37,10 @@ esphome:
   comment: $device_description
   project:
     name: $project_name
-    version: '0.8.9'
+    version: '0.9.0'
 
 esp32:
-  board: wemos_d1_mini32
+  board: nodemcu-32s
   framework:
     type: arduino
 
@@ -49,7 +49,6 @@ logger:
 api:
 
 ota:
-  password: "cdd9139ba1d8b64906b038eeafef6e67"
 
 wifi:
   ssid: !secret wifi_ssid
@@ -558,32 +557,26 @@ script:
   # set_power_led script
   # set the colour of led from green to red according to power consumption related to power problem level
   # using HSV color space and converts to RGB before setting color
-  # is also messes a bit with the scales as I don't consider 50% power usage worthy of a yellow warning color, so it uses the following color scales:
-  # 0-79% power = green to yellow
-  # 80-100% power = yellow to red
-  # also: we don't actually need the blue color, but I'm leaving it in anyway.
-  # the algoritm used can be found here: https://www.cs.rit.edu/~ncs/color/t_convert.html
+  # we don't actually need the blue color, but I'm leaving it in anyway.
+  # the algoritm used to convert hsv to rgb can be found here: https://www.cs.rit.edu/~ncs/color/t_convert.html
   - id: set_power_led_script
     mode: restart
     then:
       lambda: |-
         const float s = 1.0;    // saturation (purity). [0-1]
         const float v = 0.5;    // brightness. [0-1]
-        int i;
-        float r, g, b, h, p, q, t;
-        float f = 100;
-        if (id(power_pulse_meter).state < id(power_problem_level).state)
-        {
-          f = id(power_pulse_meter).state * 100 / id(power_problem_level).state;
+        int i = 0;
+        float h = 0;
+        float f = 0;
+        float r, g, b, p, q, t;
+        // the default hue is set to red, so we're only changing hue if power level is below problem level
+        if ( id(power_pulse_meter).state < id(power_problem_level).state ) {
+          // setting the base green to hue 130, it's a bit high, but still looks green and this should mean that 99% power = orange and not red
+          f = 130 - (id(power_pulse_meter).state * 100 / id(power_problem_level).state);
+          h = f / 60;   // sector 0 to 5
+          i = floor(h);
+          f = h - i;
         }
-        if (f >= 80) {
-           h = (100 - f) * 3;
-        } else {
-          h = 120 - (f / 80 * 60);
-        }
-        h /= 60; // sector 0 to 5
-        i = floor(h);
-        f = h - i;            // factorial part of h
         p = v * ( 1 - s );
         q = v * ( 1 - s * f );
         t = v * ( 1 - s * ( 1 - f ) );
@@ -613,18 +606,12 @@ script:
             g = p;
             b = v;
             break;
-          default:      // case 5:
+          default:
             r = v;
             g = p;
             b = q;
             break;
         }
-        //if (id(power_led).current_values.is_on())
-        //{
-        //  auto call = id(power_led).turn_off();
-        //  call.perform();
-        //  delay(50);
-        //}
         auto call = id(power_led).turn_on();
         call.set_brightness(0.4);
         call.set_rgb(r, g, b);
