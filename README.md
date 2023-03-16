@@ -5,18 +5,26 @@ ESPHome Power Meter
 
 I've used [Home Assistant Glow](https://github.com/klaasnicolaas/home-assistant-glow) for a while without problems. I decided that it would be cool to also have the ESP track costs as well. That way I could do away with Rieman Sum and Utility Meter integrations in HA. 
 
-Note: Because of how ESPHome does things, I had to implement several work-arounds, and should probably convert this whole thing to a custom component in ESPHome. However this - although far from elegant - actually seems to work.
-
 The kWh price is imported as a sensor from Home Assistant, using the [Nordpool Custom Component](https://github.com/custom-components/nordpool), but the price can also be set 'manually' with a Number component. Ideally the price should be fetched directly from NordPool using their API.
+
+I have had some weird power spikes (faulty photodiode, it turned out), so I included a 'Power Problem Level' number and a 'Power Problem Status' binary sensor in the ESPHome config. You set the level and subsequently, if power consumption goes over (or equals) the level, the binary sensor will indicate that you have a problem. The history in HA of this sensor was very useful to track the problem I had, so I have left it in.
+
+I have included a RGB led which, instead of blinking (I do not like blinking LEDs), will indicate power consumtiona level in relation to the set power problem level.
 
 To test the accuracy of the Power Meter, I created a simple Arduino Sketch to simulate the blinking LED on a 'real' Power Meter. A simple LED blinking at specific intervals to simulate power consumption. You'll find it [here](https://github.com/zenzay/arduino-projects/tree/main/power-meter-pulse-led). I also disabled the kWh Price sensor import from HA, temporarily in the code, so the price stayed fixed during testing.
 
-*Please bear in mind that this hasn't been tested extensively and I take absolutely no responsibility for any suprisingly large electricity bills*
+
+#### Disclaimer
+
+* Because of how ESPHome does things, I had to implement several kludges, and should probably convert this whole thing to a custom component in ESPHome.
+* This is still work in progress and made just for fun, to see what you could make ESPHome do, using Lambda's *all over the place*.
+* It's probably full of bugs, but as I do not have any more time, don't expect updates or fixes.
+* This hasn't been tested extensively and I take absolutely no responsibility for any suprisingly large electricity bills.
 
 Components
 -----------
 
-* An ESP32. I'm using a Wemos D1 Mini ESP32, but any ESP32 will do. An ESP8266 *might* work too, if you change pin designations.
+* An ESP32. I'm using a nodemcu-32s, but any ESP32 should do. An ESP8266 *might* work too, if you change pin designations.
 * [LM393 Photodiode Sensor module](https://www.mysensors.org/build/light-lm393)
 * [WS2818 LED](https://randomnerdtutorials.com/guide-for-ws2812b-addressable-rgb-led-strip-with-arduino/)
 
