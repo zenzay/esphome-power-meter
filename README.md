@@ -9,7 +9,7 @@ The kWh price is imported as a sensor from Home Assistant, using the [Nordpool C
 
 I have had some weird power spikes (faulty photodiode, it turned out), so I included a **Power Problem Level** number and a **Power Problem Status** binary sensor in the ESPHome config. You set the level and subsequently, if power consumption goes over (or equals) the level, the binary sensor will indicate that you have a problem. The history in HA of this sensor was very useful to track the problem I had, so I have left it in.
 
-I have also included a RGB led which, instead of blinking (I do not like blinking LEDs), will indicate power consumption level in relation to the set power problem level.
+I have also included a RGB led which, instead of blinking (I do not like blinking LEDs), will indicate power consumption level in relation to the set power problem level. Turn it on, set the brightness and the color will be set automatically at each power pulse.
 
 To test the accuracy of the Power Meter, I created a simple Arduino Sketch to simulate the blinking LED on a 'real' Power Meter. A simple LED blinking at specific intervals to simulate power consumption. You'll find it [here](https://github.com/zenzay/arduino-projects/tree/main/power-meter-pulse-led). I also disabled the kWh Price sensor import from HA, temporarily in the code, so the price stayed fixed during testing.
 
