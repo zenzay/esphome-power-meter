@@ -2,7 +2,7 @@
 #
 # Power Meter with Cost Tracking.
 #
-# ​Sic biscuitus disintegratum​
+# ​Sic biscuitus disintegratum
 
 substitutions:
   device_name: power-meter
@@ -13,7 +13,8 @@ substitutions:
   currency: 'DKK'
   pulse_pin: '26'
   led_pin: '17'
-  ha_price_sensor: 'nordpool_kwh_dk2_dkk_4_095_025'
+  ha_price_sensor: 'el_cost_price'
+  # ha_price_sensor: 'nordpool_kwh_dk2_dkk_4_095_025'
   update_interval: '60'
   flag_update_sensors: '1'
   flag_reset_total: '4'
@@ -108,7 +109,7 @@ globals:
     initial_value: '0'
 
 # Here's comes some numbers so you can set some stuff manually..
-# some only used for testing and not sure if should stay in and just being disabled by default
+# Some only used for testing and not sure if should stay in and just being disabled by default
 number:
   # A number to set the pulse rate
   - platform: template
@@ -231,12 +232,13 @@ light:
     pin: $led_pin
     num_leds: 1
     type: GRB
-    name: "Power LED"
+    name: 'Power LED'
     #internal: True
     id: power_led
     default_transition_length: 0.1s
     color_correct: [50%, 50%, 50%]
     restore_mode: ALWAYS_OFF
+    entity_category: 'config'
 
 
 button:
@@ -244,6 +246,7 @@ button:
   - platform: template
     name: 'Reset Totals'
     #id: reset_counts_button
+    device_class: restart
     entity_category: 'config'
     on_press:
       lambda: id(op_flag) = $flag_reset_mask;
@@ -267,7 +270,7 @@ sensor:
     id: ha_price_per_kwh
     entity_id: 'sensor.${ha_price_sensor}'
     on_value:
-      lambda: if (x != NAN) { id(price_per_kwh) = x; }
+      lambda: id(price_per_kwh) = x;
 
   # pulse_meter component
   # The pulse_meter component, unfortunately, does not keep updating when the pulse-width stays the same (constant power consumption, say 1000 W).
@@ -323,7 +326,7 @@ sensor:
   - platform: template
     name: 'Cost Now'
     id: cost_now_sensor
-    icon: mdi:cash-100
+    icon: mdi:cash-fast
     accuracy_decimals: 3
     unit_of_measurement: '${currency}/h'
     device_class: monetary
@@ -369,7 +372,7 @@ sensor:
     name: 'Uptime'
     icon: mdi:timelapse
     id: uptime_sensor
-    accuracy_decimals: 4
+    accuracy_decimals: 2
     unit_of_measurement: 'days'
     update_interval: never
 
@@ -418,7 +421,7 @@ interval:
           {
             if (last_day_of_year != 0)
             {
-              id(op_flag) += $flag_reset_daily;     // as the flag will be automatically cleared after each loop, we dont care about OR'ing
+              id(op_flag) |= $flag_reset_daily;
             }
             last_day_of_year = time.day_of_year;
           }
@@ -470,20 +473,20 @@ interval:
             id(uptime_sensor).publish_state(days);
             if ( days < 1.0 )
             {
-              days = 1.0;   //kludgeville
+              days = 1.0;   // welcome to kludgeville, but otherwise we'll get crazy high daily averages with uptimes less than 1 day
             }
             id(usage_daily_avg_sensor).publish_state(id(usage_total) / days);
             id(cost_daily_avg_sensor).publish_state(id(cost_total) / days);
           }
-
+          
+          // even though the following 3 sensors are also updated in the process_power_script, we're including them here,
+          // otherwise it might take a while before they'll get updated - if power consumption is low and we get very long pulse intervals
+          id(usage_total_sensor).publish_state(id(usage_total));
+          id(cost_total_sensor).publish_state(id(cost_total));
+          id(cost_now_sensor).publish_state(id(cost_now));
+          
           id(usage_day_sensor).publish_state( id(usage_day) );
           id(cost_day_sensor).publish_state( id(cost_day) );
-          // because of the following sensors are updated 'live' in the process power script
-          // they might hang around with old values (until next pulse) after a reset, so I've chosen to include them here
-          // this way they'll be updated every update interval, plus when the totals have been reset
-          id(usage_total_sensor).publish_state( id(usage_total) );
-          id(cost_total_sensor).publish_state( id(cost_total) );
-          id(cost_now_sensor).publish_state( id(cost_now) );
           id(op_flag) = 0;         // making sure the flag operations are one-shot
         }
 
@@ -500,39 +503,45 @@ script:
         // energy = delta_hours * (old_state + new_state) / 2.0;    // Trapezoid
         static uint32_t last_pulse_ms = 0;
         const uint32_t now = millis();
-        // we wont process the very first pulse, as we have no idea how long ago the last one was,
-        // We *could* use a global last_pulse_ms variable and set it at boot? That seems like overkill though
-        // If this were a custom component we could do this at setup
-        if (last_pulse_ms != 0)
-        {
-          // calculate hours since last pulse
-          const float delta_hours = (now - last_pulse_ms) / 1000.0f / 60.0f / 60.0f;
-          // get the power state in kWh
-          float new_state = id(power_pulse_meter).state / 1000.0f;
-          // calculate energy consumption and cost
-          const float energy = delta_hours * new_state;
-          const float cost = energy * id(price_per_kwh);
-          // it all adds up...
-          id(usage_total) += energy;
-          id(usage_day) += energy;
-          id(cost_total) += cost;
-          id(cost_day) += cost;
-          // calculate current hourly cost
-          id(cost_now) = new_state * id(price_per_kwh);
 
-          // update sensors - it's going public!
-          // I've chosen to put these here instead of in the interval above as I like 'live' updates on the totals and cost now sensors
-          id(usage_total_sensor).publish_state(id(usage_total));
-          id(cost_total_sensor).publish_state(id(cost_total));
-          id(cost_now_sensor).publish_state(id(cost_now));
-          if (id(power_led).current_values.is_on())
-          {
-            id(set_power_led_script).execute();
-          }
-          // if you uncomment the following you'll also update the rest of the sensors at each pulse (in the interval).
-          // id(op_flag) += $flag_update_sensors;
+        // we wont process the very first pulse, as we have no idea how long ago the last one was,
+        // We *could* use a global last_pulse_ms variable and set it at boot? That seems like overkill though (says the guy who loves wasting globals)
+        // If this were a custom component we could do this at setup
+        if (last_pulse_ms == 0) { 
+          last_pulse_ms = now;
+          return; 
         }
+        // calculate hours since last pulse
+        const float delta_hours = (now - last_pulse_ms) / 1000.0f / 60.0f / 60.0f;
         last_pulse_ms = now;    // remember last pulse milliseconds
+
+        // get the power state in kWh
+        float new_state = id(power_pulse_meter).state / 1000.0f;
+        // calculate energy consumption and cost
+        const float energy = delta_hours * new_state;
+        const float cost = energy * id(price_per_kwh);
+        // it all adds up...
+        id(usage_total) += energy;
+        id(usage_day) += energy;
+        id(cost_total) += cost;
+        id(cost_day) += cost;
+        // calculate current hourly cost
+        //ESP_LOGD("debug", "Power: %.3f - Price: %.3f", new_state, id(price_per_kwh));
+        id(cost_now) = new_state * id(price_per_kwh);
+
+        // publish states to the sensors we want 'live' updates on (the rest can wait for the update_interval)
+        id(usage_total_sensor).publish_state(id(usage_total));
+        id(cost_total_sensor).publish_state(id(cost_total));
+        id(cost_now_sensor).publish_state(id(cost_now));
+
+        // if you uncomment the following you'll also update the rest of the sensors at each pulse (in the interval).
+        // id(op_flag) += $flag_update_sensors;
+
+        // if LED is on, set the color
+        if (id(power_led).current_values.is_on())
+        {
+          id(set_power_led_script).execute();
+        }
 
 
   # set_power_led script
