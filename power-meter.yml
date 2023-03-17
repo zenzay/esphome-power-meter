@@ -419,7 +419,7 @@ interval:
         }
         if (update_count == 1)
         {
-          id(op_flag) += $flag_update_sensors;
+          id(op_flag) |= $flag_update_sensors;
         }
         update_count++;
         if ( update_count >= $update_interval )
