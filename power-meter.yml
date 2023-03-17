@@ -144,8 +144,7 @@ number:
     disabled_by_default: true
     entity_category: 'config'
     on_value:
-      lambda: |-
-        id(usage_total) = x;
+      lambda: id(usage_total) = x;
 
   # A number to set the current total cost
   - platform: template
@@ -163,8 +162,7 @@ number:
     disabled_by_default: true
     entity_category: 'config'
     on_value:
-      lambda: |-
-        id(cost_total) = x;
+      lambda: id(cost_total) = x;
 
   # A number to set uptime. note that we're handing it in units of days, in the Uptime number and Uptime sensor, although it's tracked as seconds internally,
   # although you lose some precision having only 3 accuracy decimals, I, for one, do not count in seconds.
@@ -290,9 +288,7 @@ sensor:
     accuracy_decimals: 0
     pin: $pulse_pin
     internal_filter_mode: EDGE
-    internal_filter: 100ms
-    # 3600 ms = 1000 W with a pulse rate of 1000, so with a 100ms filter we should be able to report 36000 W.
-    # Anyway, the power consumption in my house won't ever go over 10000 W, so that's good enough.
+    internal_filter: 50ms
     filters:
       - lambda: return x * id(pulse_multiply);
     total:
