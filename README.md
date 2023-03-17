@@ -3,6 +3,7 @@ ESPHome Power Meter
 
 ### Yet another version of a non-invasive Power Meter for use in [Home Assistant](https://www.home-assistant.io/), using the [Pulse Meter](https://esphome.io/components/sensor/pulse_meter.html) component in [ESPHome](https://esphome.io/). ###
 
+
 I've used [Home Assistant Glow](https://github.com/klaasnicolaas/home-assistant-glow) for a while without problems. I decided that it would be cool to also have the ESP track costs as well. That way I could do away with Rieman Sum and Utility Meter integrations in HA. This is the result of having that initial idea and a lot of hammering on the keyboard.
 
 The kWh price is imported as a sensor from Home Assistant, which is running the [Nordpool Custom Component](https://github.com/custom-components/nordpool), but the price can also be set 'manually' with a Number component. Ideally the price should be fetched directly from NordPool using their API.
@@ -13,12 +14,18 @@ I have also included a RGB led which, instead of blinking (I do not like blinkin
 
 To test the accuracy of the Power Meter, I created a simple Arduino Sketch to simulate the blinking LED on a 'real' Power Meter. A simple LED blinking at specific intervals to simulate power consumption. You'll find it [here](https://github.com/zenzay/arduino-projects/tree/main/power-meter-pulse-led). I also disabled the kWh Price sensor import from HA, temporarily in the code, so the price stayed fixed during testing.
 
-
 #### Disclaimer
 
 * Because of how ESPHome *does things*, I had to implement several kludges, and should probably convert this whole thing to a custom component.
 * This is still work in progress and made just for fun, to see what you could accomplish in an ESPHome configuration, using Globals and Lambda's *all over the place*.
 * This hasn't been tested extensively and I take absolutely no responsibility for any suprisingly large electricity bills.
+
+
+
+## Home Assistant Dashboard Cards ##
+![sensors](./assets/images/sensors.png)
+![configuration](./assets/images/configuration.png)
+
 
 Components
 -----------
