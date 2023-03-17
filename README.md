@@ -23,8 +23,8 @@ To test the accuracy of the Power Meter, I created a simple Arduino Sketch to si
 
 
 ## Home Assistant Dashboard Cards ##
-![sensors](./assets/images/sensors.png)
-![configuration](./assets/images/configuration.png)
+![Picture of sensors](./assets/images/sensors.png)
+![Picture of configuration](./assets/images/configuration.png)
 
 
 Components
