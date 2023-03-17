@@ -5,6 +5,8 @@ ESPHome Power Meter w/ E-Ink Display
 
 This is the 'extended' version of my ESPHome Power Meter. This version adds an E-Ink Display and a humble push button. The button enables turning pages on the display manually. Main page is a - sort of - status page and the subsequent pages shows some graphs and stuff.  To make it easier for myself - not wanting to draw every single line on the display - I've created some transparent backgrounds in GIMP, and just pop those on the display before drawing the rest.
 
+I've removed the Power LED from the setup, as I don't feel a need for a LED when we have a display.
+
 #### Status Page ####
 ![pm_page_1](./assets/pm-page-1.jpg)
 #### Daily Usage Graph ####
@@ -16,8 +18,7 @@ Note 1: The display code is quite messy and really should be rewritten.
 
 Note 2: Put the pictures from the images folder in the ESPHome folder before installing.
 
-Note 3: Achieving transparency when drawing images on displays in ESPHome can be tricky. I often ended up with exporting PNGs from GIMP that, to the naked eye, looked like they were fully transparent, but they were apparently not 100% and turned up black on the display. What seemed to fix it was to fill all areas, that I wanted transparent, with white and subsequently Magic Select the areas and delete them.
-
+Note 3: Achieving transparency when drawing images on E-Ink Displays in ESPHome can be tricky. If a pixel is anything other than 100% transparent, it will turn up black on the display. I'm not sure if it was a fault of mine or a quirk of GIMP, but I was exporting PNGs from GIMP that should've be 100% transparent, and looked it to the naked eye, but were apparently not 100% and turned up black on the display.
 
 Components
 -----------
