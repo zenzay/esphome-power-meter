@@ -2,7 +2,7 @@
 #
 # Power Meter with Cost Tracking.
 #
-# ​ Sic biscuitus disintegratum ​
+# ​Sic biscuitus disintegratum​
 
 substitutions:
   device_name: power-meter
@@ -16,9 +16,10 @@ substitutions:
   ha_price_sensor: 'nordpool_kwh_dk2_dkk_4_095_025'
   update_interval: '60'
   flag_update_sensors: '1'
-  flag_reset_total: '4'
-  flag_reset_daily: '8'
-  flag_reset_mask: '12'
+  flag_reset_hourly: '8'
+  flag_reset_daily: '16'
+  flag_reset_total: '128'
+  flag_reset_mask: '248'
 
 # substitutions:
 #          pulse_rate: Pulse Rate of the LED on your power-panel-meter
@@ -52,6 +53,13 @@ ota:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
+  power_save_mode: none
+  reboot_timeout: 1h
+  fast_connect: True
+  manual_ip:
+    static_ip: 10.25.8.109
+    gateway: 10.25.8.1
+    subnet: 255.255.255.0
 
 # Global variables. I find global variables very convenient in ESPHome, and see no reason (actually I do),
 # not to use them as if they were a dime a dozen. I gotta believe that fetching the value of a global variable is faster than
@@ -67,6 +75,11 @@ globals:
     restore_value: yes
     initial_value: '0'
 
+  - id: usage_hour         # hourly kwh usage
+    type: float
+    restore_value: no
+    initial_value: '0'
+
   - id: cost_total        # total cost
     type: float
     restore_value: yes
@@ -75,6 +88,11 @@ globals:
   - id: cost_day          # daily cost
     type: float
     restore_value: yes
+    initial_value: '0'
+
+  - id: cost_hour          # hourly cost
+    type: float
+    restore_value: no
     initial_value: '0'
 
   - id: uptime_secs       # uptime second counter
@@ -125,8 +143,7 @@ number:
     restore_value: yes
     entity_category: 'config'
     on_value:
-      lambda: |-
-        id(pulse_multiply) = (60.0f / x ) * 1000.0f;
+      lambda: id(pulse_multiply) = (60.0f / x ) * 1000.0f;
 
   # A number to set the total usage
   - platform: template
@@ -236,9 +253,8 @@ light:
     restore_mode: ALWAYS_OFF
     entity_category: 'config'
 
-
 button:
-  # A Button to reset total and daily counts
+  # Button to reset total and daily counts
   - platform: template
     name: 'Reset Totals'
     #id: reset_counts_button
@@ -247,12 +263,12 @@ button:
     on_press:
       lambda: id(op_flag) = $flag_reset_mask;
 
-    #A Shutdown Button. Remember to use this before unplugging device, to make sure totals are saved
+    # Shutdown Button. Remember to use this before unplugging device, to make sure totals are saved
   - platform: shutdown
     name: 'Shutdown'
 
 binary_sensor:
-    # A binary sensor to indicate we got a problem with the power level - it has exceeded the set level.
+    # binary sensor to indicate we got a problem with the power level - it has exceeded the set level.
   - platform: template
     name: 'Power Status'
     id: power_status_sensor
@@ -275,6 +291,7 @@ sensor:
   # However, as the intention is to track energy and cost on a time-basis 'idling' cannot be accepted and thus we end up having to 'hook' into
   # the total: sensor from the pulse_meter.
   # Note: The 'lack' of updates in the pulse_meter component also means that changing the pulse-rate will not take effect until next change in power consumption.
+
   - platform: pulse_meter
     name: 'Power Use'
     id: power_pulse_meter
@@ -315,6 +332,16 @@ sensor:
     update_interval: never
 
   - platform: template
+    name: 'Usage Hourly'
+    id: usage_hour_sensor
+    unit_of_measurement: 'kWh'
+    icon: mdi:meter-electric
+    state_class: total_increasing
+    device_class: energy
+    accuracy_decimals: 3
+    update_interval: never
+
+  - platform: template
     name: 'Cost Now'
     id: cost_now_sensor
     icon: mdi:cash-fast
@@ -336,6 +363,15 @@ sensor:
     name: 'Cost Daily'
     icon: mdi:cash-100
     id: cost_day_sensor
+    unit_of_measurement: $currency
+    accuracy_decimals: 3
+    device_class: monetary
+    update_interval: never
+
+  - platform: template
+    name: 'Cost Hourly'
+    icon: mdi:cash-100
+    id: cost_hour_sensor
     unit_of_measurement: $currency
     accuracy_decimals: 3
     device_class: monetary
@@ -401,85 +437,84 @@ interval:
       lambda: |-
         static uint32_t update_count = 0;         // count intervals between updates
         static uint32_t last_day_of_year = 0;     // day of the year the last time we reset daily
+        static uint32_t last_hour_today = 0;      // hour today when we last reset hourly
         auto time = id(esp_time).now();           // getting the time
 
-        // check if we've reached a new day, but instead of checking for zero hours zulu, we're gonna check if it's a new day of the year
-        // If so, we're just gonna go right ahead and set the flag to reset the daily counts
-        // we should probably check for a valid date though
         if ( time.is_valid() )
         {
-          if ( time.day_of_year != last_day_of_year )
-          {
-            if (last_day_of_year != 0)
-            {
+          if ( time.day_of_year != last_day_of_year ) {
+            if (last_day_of_year != 0) {
               id(op_flag) |= $flag_reset_daily;
             }
             last_day_of_year = time.day_of_year;
           }
+          if ( time.hour != last_hour_today ) {
+            if (last_hour_today != 0) {
+              id(op_flag) |= $flag_reset_hourly;
+            }
+            last_hour_today = time.hour;
+          }
         }
-        if (update_count == 1)
-        {
+        if ( id(op_flag) & $flag_reset_total ) {
+          //ESP_LOGD("debug", "reset total");
+          id(uptime_start) = 0;
+          id(uptime_secs) = 0;
+          id(usage_total) = 0;
+          id(cost_total) = 0;
+          id(cost_now) = 0;
+          update_count = 1;
+        }
+        if ( id(op_flag) & $flag_reset_daily ) {
+          //ESP_LOGD("debug", "reset daily");
+          id(usage_day) = 0;
+          id(cost_day) = 0;
+          update_count = 1;
+        }
+        if ( id(op_flag) & $flag_reset_hourly ) {
+          //ESP_LOGD("debug", "reset hourly");
+          id(usage_hour) = 0;
+          id(cost_hour) = 0;
+          update_count = 1;
+        }
+        if (update_count == 1) {
           id(op_flag) |= $flag_update_sensors;
         }
         update_count++;
-        if ( update_count >= $update_interval )
-        {
+        if ( update_count >= $update_interval ) {
           update_count = 0;
         }
-        // And now we process the global op_flag
-        // Check if any op_flags are set, if so it means either we're up for resetting total and/or daily counts or just a simple sensor update.
-        // check if we need to reset total count
-        if ( id(op_flag) != 0)
-        {
-          if ( id(op_flag) & $flag_reset_total )
-          {
-            ESP_LOGD("debug", "reset total");
-            id(uptime_start) = 0;
-            id(uptime_secs) = 0;
-            id(usage_total) = 0;
-            id(cost_total) = 0;
-            id(cost_now) = 0;
-            update_count = 0;
-          }
-          if ( id(op_flag) & $flag_reset_daily )
-          {
-            ESP_LOGD("debug", "reset daily");
-            id(usage_day) = 0;
-            id(cost_day) = 0;
-          }
-          if ( time.is_valid() )
-          {
+        if ( id(op_flag) & $flag_update_sensors ) {
+          if ( time.is_valid() ) {
             float days = 0;
-            if ( id(uptime_start) == 0 )
-            {
+            if ( id(uptime_start) == 0 ) {
               id(uptime_start) = time.timestamp - id(uptime_secs);
             }
-            else if ( ( time.timestamp - id(uptime_start) ) > id(uptime_secs) )
-            {
+            else if ( ( time.timestamp - id(uptime_start) ) > id(uptime_secs) ) {
               id(uptime_secs) = time.timestamp - id(uptime_start);
             }
             if ( id(uptime_secs) > 0 ) {
               days = id(uptime_secs) / 60.0f / 60.0f / 24.0f;
             }
             id(uptime_sensor).publish_state(days);
-            if ( days < 1.0 )
-            {
+            if ( days < 1.0 ) {
               days = 1.0;   // welcome to kludgeville, but otherwise we'll get crazy high daily averages with uptimes less than 1 day
             }
             id(usage_daily_avg_sensor).publish_state(id(usage_total) / days);
             id(cost_daily_avg_sensor).publish_state(id(cost_total) / days);
           }
-          
+
           // even though the following 3 sensors are also updated in the process_power_script, we're including them here,
           // otherwise it might take a while before they'll get updated - if power consumption is low and we get very long pulse intervals
           id(usage_total_sensor).publish_state(id(usage_total));
           id(cost_total_sensor).publish_state(id(cost_total));
           id(cost_now_sensor).publish_state(id(cost_now));
-          
+
           id(usage_day_sensor).publish_state( id(usage_day) );
           id(cost_day_sensor).publish_state( id(cost_day) );
-          id(op_flag) = 0;         // making sure the flag operations are one-shot
+          id(usage_hour_sensor).publish_state( id(usage_hour) );
+          id(cost_hour_sensor).publish_state( id(cost_hour) );
         }
+        id(op_flag) = 0;         // making sure the flag operations are one-shot
 
 script:
   # process power script - process the power pulses - track energy and costs.
@@ -498,9 +533,9 @@ script:
         // we wont process the very first pulse, as we have no idea how long ago the last one was,
         // We *could* use a global last_pulse_ms variable and set it at boot? That seems like overkill though (says the guy who loves wasting globals)
         // If this were a custom component we could do this at setup
-        if (last_pulse_ms == 0) { 
+        if (last_pulse_ms == 0) {
           last_pulse_ms = now;
-          return; 
+          return;
         }
         // calculate hours since last pulse
         const float delta_hours = (now - last_pulse_ms) / 1000.0f / 60.0f / 60.0f;
@@ -514,8 +549,10 @@ script:
         // it all adds up...
         id(usage_total) += energy;
         id(usage_day) += energy;
+        id(usage_hour) += energy;
         id(cost_total) += cost;
         id(cost_day) += cost;
+        id(cost_hour) += cost;
         // calculate current hourly cost
         //ESP_LOGD("debug", "Power: %.3f - Price: %.3f", new_state, id(price_per_kwh));
         id(cost_now) = new_state * id(price_per_kwh);
@@ -526,11 +563,10 @@ script:
         id(cost_now_sensor).publish_state(id(cost_now));
 
         // if you uncomment the following you'll also update the rest of the sensors at each pulse (in the interval).
-        // id(op_flag) += $flag_update_sensors;
+        // id(op_flag) |= $flag_update_sensors;
 
         // if LED is on, set the color
-        if (id(power_led).current_values.is_on())
-        {
+        if (id(power_led).current_values.is_on()) {
           id(set_power_led_script).execute();
         }
 
