@@ -224,7 +224,6 @@ number:
 # Power LED light, in form of a single RGB LED.
 # I've chosen to use a single element from a WS2812B strip. It only require 3 wires and driving a single LED ain't gonna take much juice.
 # This light is not to have a blinking led - I hate blinking leds - but to indicate the current level of power consumption.
-# I've also added a switch (below), which has to be turned on for the LED to be set automatically.
 light:
   - platform: neopixelbus
     variant: WS2812
