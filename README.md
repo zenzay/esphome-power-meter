@@ -14,11 +14,10 @@ I've removed the Power LED from the setup, as I don't feel a need for a LED when
 #### Daily Cost Graph ####
 ![pm_page_3](./assets/pm-page-3.jpg)
 
-Note 1: The display code is quite messy and really should be rewritten.
-
-Note 2: Put the pictures from the images folder in the ESPHome folder before installing.
-
-Note 3: Achieving transparency when drawing images on E-Ink Displays in ESPHome can be tricky. If a pixel is anything other than 100% transparent, it will turn up black on the display. I'm not sure if it was a fault of mine or a quirk of GIMP, but I was exporting PNGs from GIMP that should've be 100% transparent, and looked it to the naked eye, but were apparently not 100% and turned up black on the display.
+## Notes
+* The display code is quite messy and really should be rewritten.
+* Put the pictures from the images folder in the ESPHome folder before installing.
+* Achieving transparency when drawing images on E-Ink Displays in ESPHome can be tricky. If a pixel is anything other than 100% transparent, it will turn up black on the display. I'm not sure if it was a fault of mine or a quirk of GIMP, but I was exporting PNGs from GIMP that should've be 100% transparent, and looked it to the naked eye, but were apparently not 100% and turned up black on the display.
 
 Components
 -----------
