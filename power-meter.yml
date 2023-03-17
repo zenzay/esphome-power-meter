@@ -269,15 +269,12 @@ sensor:
       lambda: id(price_per_kwh) = x;
 
   # pulse_meter component
-  # The pulse_meter component, unfortunately, does not keep updating when the pulse-width stays the same (constant power consumption, say 1000 W).
-  # It always updates its total: sub-sensor, but, after a few times, does not apply the filters or call on_value: (or on_raw_value:).
-  # This actually makes sense; there's no need to waste bandwidth and power consumption often fluctuates and usually dont stay fixed for long.
-  # However, as the intention is to track energy and cost on a time-basis, 'idling' cannot be accepted and thus we end up having to 'hook' into
-  # the total: sub-sensor from the power_meter, instead of the main sensor, which isn't ideal, but works.
-  # Also... (apparently?!) the total: sensor seems to get a headstart of my calculations and always counts one pulse before on_value: is even called?
-  # I decided not to chase that down, as all of this really shouldn't be done this way anyway (custom component anyone?).
-  # Besides if you use 1000W when resetting, it'll only end up 0.001 kWh off at the end.
-  # Note: The 'lack' of updates in the power_meter component also means that changing the pulse-rate will not take effect until next change in power consumption.
+  # The pulse_meter component, unfortunately, does not keep updating when the power consumpption stays the same (constant power consumption, say 1000 W).
+  # It always updates its total: sensor (ofc), but, after a few times, does not apply the filters or call on_value: (or on_raw_value:) on the pulse_meter.
+  # This makes sense; there's no need to waste bandwidth, plus power consumption most often fluctuates and usually dont stay fixed for long.
+  # However, as the intention is to track energy and cost on a time-basis 'idling' cannot be accepted and thus we end up having to 'hook' into
+  # the total: sensor from the pulse_meter.
+  # Note: The 'lack' of updates in the pulse_meter component also means that changing the pulse-rate will not take effect until next change in power consumption.
   - platform: pulse_meter
     name: 'Power Use'
     id: power_pulse_meter
