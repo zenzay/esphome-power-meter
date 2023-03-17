@@ -284,7 +284,6 @@ sensor:
   # However, as the intention is to track energy and cost on a time-basis 'idling' cannot be accepted and thus we end up having to 'hook' into
   # the total: sensor from the pulse_meter.
   # Note: The 'lack' of updates in the pulse_meter component also means that changing the pulse-rate will not take effect until next change in power consumption.
-
   - platform: pulse_meter
     name: 'Power Use'
     id: power_pulse_meter
