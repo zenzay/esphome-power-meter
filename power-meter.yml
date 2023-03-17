@@ -2,7 +2,7 @@
 #
 # Power Meter with Cost Tracking.
 #
-# ​Sic biscuitus disintegratum
+# ​ Sic biscuitus disintegratum ​
 
 substitutions:
   device_name: power-meter
@@ -13,8 +13,7 @@ substitutions:
   currency: 'DKK'
   pulse_pin: '26'
   led_pin: '17'
-  ha_price_sensor: 'el_cost_price'
-  # ha_price_sensor: 'nordpool_kwh_dk2_dkk_4_095_025'
+  ha_price_sensor: 'nordpool_kwh_dk2_dkk_4_095_025'
   update_interval: '60'
   flag_update_sensors: '1'
   flag_reset_total: '4'
