@@ -1,14 +1,10 @@
-# Power Meter v0.9.0
+# Power Meter v0.9.1
 #
 # Power Meter with Cost Tracking.
 #
-# ​Sic biscuitus disintegratum​
+# ​ Sic biscuitus disintegratum ​
 
 substitutions:
-  device_name: power-meter
-  friendly_name: 'Power Meter'
-  device_description: 'Power Meter with Cost Tracking'
-  project_name: zenzay.power_meter
   pulse_rate: '1000.0'
   currency: 'DKK'
   pulse_pin: '26'
@@ -29,15 +25,18 @@ substitutions:
 #     ha_price_sensor: entity_id of the sensor used in Home Assistant to track spot prices.
 #     update_interval: Seconds (ticks in 1s interval loop) between updating sensors.
 #
-# Note: The flag* substitutions are because we don't have #define available.
+# Note: The flag* substitutions are instead of #defines.
 
 esphome:
-  name: $device_name
-  friendly_name: $friendly_name
-  comment: $device_description
+  name: power-meter
+  friendly_name: 'Power Meter'
+  comment: 'Power Meter with Cost Tracking'
   project:
-    name: $project_name
-    version: '0.9.0'
+    name: zenzay.power_meter
+    version: '0.9.1'
+
+preferences:
+  flash_write_interval: 1h
 
 esp32:
   board: nodemcu-32s
@@ -227,7 +226,6 @@ number:
     initial_value: 10000
     restore_value: yes
     entity_category: 'config'
-
 
 # Power LED light, in form of a single RGB LED.
 # I've chosen to use a single element from a WS2812B strip. It only require 3 wires and driving a single LED ain't gonna take much juice.
@@ -448,7 +446,7 @@ interval:
           }
         }
         if ( id(op_flag) & $flag_reset_total ) {
-          //ESP_LOGD("debug", "reset total");
+          ESP_LOGD("debug", "reset total");
           id(uptime_start) = 0;
           id(uptime_secs) = 0;
           id(usage_total) = 0;
@@ -457,13 +455,13 @@ interval:
           update_count = 1;
         }
         if ( id(op_flag) & $flag_reset_daily ) {
-          //ESP_LOGD("debug", "reset daily");
+          ESP_LOGD("debug", "reset daily");
           id(usage_day) = 0;
           id(cost_day) = 0;
           update_count = 1;
         }
         if ( id(op_flag) & $flag_reset_hourly ) {
-          //ESP_LOGD("debug", "reset hourly");
+          ESP_LOGD("debug", "reset hourly");
           id(usage_hour) = 0;
           id(cost_hour) = 0;
           update_count = 1;
