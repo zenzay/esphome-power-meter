@@ -53,13 +53,6 @@ ota:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
-  power_save_mode: none
-  reboot_timeout: 1h
-  fast_connect: True
-  manual_ip:
-    static_ip: 10.25.8.109
-    gateway: 10.25.8.1
-    subnet: 255.255.255.0
 
 # Global variables. I find global variables very convenient in ESPHome, and see no reason (actually I do),
 # not to use them as if they were a dime a dozen. I gotta believe that fetching the value of a global variable is faster than
