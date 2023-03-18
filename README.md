@@ -7,7 +7,13 @@ This is the 'extended' version of my ESPHome Power Meter. This version adds an E
 
 I've removed the Power LED from the setup, as I don't feel a need for a LED when we have a display.
 
-It has the same sensors and configuration in HA as the basic version and here's some examples of the pages on the E-Ink Display:
+It has the same sensors and configuration in HA as the basic version.
+
+I shoved it all into a Raspberry Pi case, I had lying around:
+
+![pm_box](./assets/power-meter-box.jpg)
+
+Here's some examples of the pages on the E-Ink Display:
 
 #### Status Page ####
 ![pm_page_1](./assets/pm-page-1.jpg)
@@ -15,6 +21,8 @@ It has the same sensors and configuration in HA as the basic version and here's 
 ![pm_page_2](./assets/pm-page-2.jpg)
 #### Daily Cost Graph ####
 ![pm_page_3](./assets/pm-page-3.jpg)
+
+
 
 ## Notes
 * The display code is quite messy and really should be rewritten.
