@@ -22,7 +22,7 @@ To test the accuracy of the Power Meter, I created a simple Arduino Sketch to si
 
 
 
-## Home Assistant Dashboard Cards ##
+## Home Assistant Example Cards ##
 ![Picture of HA Dashboard](./assets/images/pm-ha-dashboard.png)
 
 
