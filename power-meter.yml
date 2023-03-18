@@ -2,7 +2,7 @@
 #
 # Power Meter with Cost Tracking.
 #
-# ​ Sic biscuitus disintegratum ​
+# ​Sic biscuitus disintegratum
 
 substitutions:
   pulse_rate: '1000.0'
@@ -25,7 +25,6 @@ substitutions:
 #     ha_price_sensor: entity_id of the sensor used in Home Assistant to track spot prices.
 #     update_interval: Seconds (ticks in 1s interval loop) between updating sensors.
 #
-# Note: The flag* substitutions are instead of #defines.
 
 esphome:
   name: power-meter
@@ -57,63 +56,63 @@ wifi:
 # not to use them as if they were a dime a dozen. I gotta believe that fetching the value of a global variable is faster than
 # accessing a state of a sensor. A flat-earther would probably have real problems with this attitude though.
 globals:
-  - id: usage_total       # total kwh usage
+  - id: usage_total         # total kwh usage
     type: float
     restore_value: yes
     initial_value: '0'
 
-  - id: usage_day         # daily kwh usage
+  - id: usage_day           # daily kwh usage
     type: float
     restore_value: yes
     initial_value: '0'
 
-  - id: usage_hour         # hourly kwh usage
+  - id: usage_hour          # hourly kwh usage
     type: float
     restore_value: no
     initial_value: '0'
 
-  - id: cost_total        # total cost
+  - id: cost_total          # total cost
     type: float
     restore_value: yes
     initial_value: '0'
 
-  - id: cost_day          # daily cost
+  - id: cost_day            # daily cost
     type: float
     restore_value: yes
     initial_value: '0'
 
-  - id: cost_hour          # hourly cost
+  - id: cost_hour           # hourly cost
     type: float
     restore_value: no
     initial_value: '0'
 
-  - id: uptime_secs       # uptime second counter
+  - id: uptime_secs         # uptime second counter
     type: int
     restore_value: yes
     initial_value: '0'
 
-  - id: cost_now          # hourly cost right now
+  - id: cost_now            # hourly cost right now
     type: float
     restore_value: no
     initial_value: '0'
 
-  - id: price_per_kwh     # price per kwh, should be automatically imported from HA, but can also be set manually
+  - id: price_per_kwh       # price per kwh, should be automatically imported from HA, but can also be set manually
     type: float
     restore_value: no
     initial_value: '0'
 
-  - id: uptime_start      # uptime start timestamp
+  - id: uptime_start        # uptime start timestamp
     type: int
     restore_value: no
     initial_value: '0'
 
-  - id: op_flag           # A bitmask for setting operational flags (like reset total count).
+  - id: op_flag             # bitmask for setting operational flags (like reset total count).
     type: int
     restore_value: no
     initial_value: '0'
 
-  - id: pulse_multiply    # pulse_meter state multiplier. it's set on boot or when user changes the Pulse Rate Number in HA.
-    type: int             # really shouldn't use a global for this. But hey ho, waste some RAM, gain miniscule increase of execution speed, maybe.
+  - id: pulse_multiply      # pulse_meter state multiplier. it's set on boot or when user changes the Pulse Rate Number in HA.
+    type: int               # really shouldn't use a global for this. But hey ho, waste some RAM, gain miniscule increase of execution speed, maybe.
     restore_value: no
     initial_value: '0'
 
@@ -132,7 +131,6 @@ number:
     max_value: 10000
     step: 100
     initial_value: 1000
-    restore_value: yes
     entity_category: 'config'
     on_value:
       lambda: id(pulse_multiply) = (60.0f / x ) * 1000.0f;
@@ -149,7 +147,6 @@ number:
     max_value: 100000
     step: 0.001
     initial_value: 0
-    restore_value: no
     disabled_by_default: true
     entity_category: 'config'
     on_value:
@@ -167,7 +164,6 @@ number:
     max_value: 100000
     step: 0.001
     initial_value: 0
-    restore_value: no
     disabled_by_default: true
     entity_category: 'config'
     on_value:
@@ -186,7 +182,6 @@ number:
     max_value: 365
     step: 0.01
     initial_value: 0
-    restore_value: no
     disabled_by_default: true
     entity_category: 'config'
     on_value:
@@ -206,7 +201,6 @@ number:
     max_value: 100
     step: 0.001
     initial_value: 0
-    restore_value: no
     disabled_by_default: true
     entity_category: 'config'
     on_value:
@@ -224,7 +218,6 @@ number:
     max_value: 100000
     step: 1
     initial_value: 10000
-    restore_value: yes
     entity_category: 'config'
 
 # Power LED light, in form of a single RGB LED.
@@ -560,7 +553,6 @@ script:
           id(set_power_led_script).execute();
         }
 
-
   # set_power_led script
   # set the colour of led from green to red according to power consumption related to power problem level
   # using HSV color space and converts to RGB before setting color
@@ -631,4 +623,3 @@ script:
         //call.set_brightness(0.4);
         call.set_rgb(r, g, b);
         call.perform();
-
