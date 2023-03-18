@@ -2,7 +2,7 @@
 #
 # Power Meter with Cost Tracking.
 #
-# ​Sic biscuitus disintegratum
+# ​ Sic biscuitus disintegratum ​
 
 substitutions:
   pulse_rate: '1000.0'
@@ -51,6 +51,7 @@ ota:
 wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
+  #power_save_mode: none
 
 # Global variables. I find global variables very convenient in ESPHome, and see no reason (actually I do),
 # not to use them as if they were a dime a dozen. I gotta believe that fetching the value of a global variable is faster than
@@ -121,7 +122,6 @@ globals:
 number:
   # A number to set the pulse rate
   - platform: template
-    #id: set_new_pulse_rate
     name: 'Set Pulse Rate'
     unit_of_measurement: 'Pulse/kWh'
     icon: mdi:pulse
@@ -131,6 +131,7 @@ number:
     max_value: 10000
     step: 100
     initial_value: 1000
+    restore_value: yes
     entity_category: 'config'
     on_value:
       lambda: id(pulse_multiply) = (60.0f / x ) * 1000.0f;
@@ -138,7 +139,6 @@ number:
   # A number to set the total usage
   - platform: template
     name: 'Set Total Usage'
-    #id: set_new_total_usage
     unit_of_measurement: 'kWh'
     icon: mdi:meter-electric
     optimistic: true
@@ -155,7 +155,6 @@ number:
   # A number to set the current total cost
   - platform: template
     name: 'Set Total Cost'
-    #id: set_new_total_cost
     unit_of_measurement: $currency
     icon: mdi:cash-100
     optimistic: true
@@ -173,7 +172,6 @@ number:
   # although you lose some precision having only 3 accuracy decimals, I, for one, do not count in seconds.
   - platform: template
     name: 'Set Uptime'
-    #id: set_new_uptime
     unit_of_measurement: 'days'
     icon: mdi:timelapse
     optimistic: true
@@ -192,7 +190,6 @@ number:
   # A number to set the kWh price 'manually'
   - platform: template
     name: 'Set kWh Price'
-    #id: set_kwh_price
     icon: mdi:cash-100
     unit_of_measurement: '${currency}/kWh'
     optimistic: true
@@ -218,6 +215,7 @@ number:
     max_value: 100000
     step: 1
     initial_value: 10000
+    restore_value: yes
     entity_category: 'config'
 
 # Power LED light, in form of a single RGB LED.
@@ -230,7 +228,6 @@ light:
     num_leds: 1
     type: GRB
     name: 'Power LED'
-    #internal: True
     id: power_led
     default_transition_length: 0.1s
     color_correct: [50%, 50%, 50%]
@@ -241,7 +238,6 @@ button:
   # Button to reset total and daily counts
   - platform: template
     name: 'Reset Totals'
-    #id: reset_counts_button
     device_class: restart
     entity_category: 'config'
     on_press:
@@ -425,6 +421,11 @@ interval:
 
         if ( time.is_valid() )
         {
+          if ( id(uptime_start) == 0 ) {
+            id(uptime_start) = time.timestamp - id(uptime_secs);
+          } else if ( ( time.timestamp - id(uptime_start) ) > id(uptime_secs) ) {
+            id(uptime_secs) = time.timestamp - id(uptime_start);
+          }
           if ( time.day_of_year != last_day_of_year ) {
             if (last_day_of_year != 0) {
               id(op_flag) |= $flag_reset_daily;
@@ -445,36 +446,30 @@ interval:
           id(usage_total) = 0;
           id(cost_total) = 0;
           id(cost_now) = 0;
-          update_count = 1;
+          update_count = 0;
         }
         if ( id(op_flag) & $flag_reset_daily ) {
           ESP_LOGD("debug", "reset daily");
           id(usage_day) = 0;
           id(cost_day) = 0;
-          update_count = 1;
+          update_count = 0;
         }
         if ( id(op_flag) & $flag_reset_hourly ) {
           ESP_LOGD("debug", "reset hourly");
           id(usage_hour) = 0;
           id(cost_hour) = 0;
-          update_count = 1;
-        }
-        if (update_count == 1) {
-          id(op_flag) |= $flag_update_sensors;
-        }
-        update_count++;
-        if ( update_count >= $update_interval ) {
           update_count = 0;
         }
-        if ( id(op_flag) & $flag_update_sensors ) {
-          if ( time.is_valid() ) {
+        if ( time.is_valid() ) {
+          if (update_count == 0) {
+            id(op_flag) |= $flag_update_sensors;
+          }
+          update_count++;
+          if ( update_count >= $update_interval ) {
+            update_count = 0;
+          }        
+          if ( id(op_flag) & $flag_update_sensors ) {
             float days = 0;
-            if ( id(uptime_start) == 0 ) {
-              id(uptime_start) = time.timestamp - id(uptime_secs);
-            }
-            else if ( ( time.timestamp - id(uptime_start) ) > id(uptime_secs) ) {
-              id(uptime_secs) = time.timestamp - id(uptime_start);
-            }
             if ( id(uptime_secs) > 0 ) {
               days = id(uptime_secs) / 60.0f / 60.0f / 24.0f;
             }
@@ -484,18 +479,18 @@ interval:
             }
             id(usage_daily_avg_sensor).publish_state(id(usage_total) / days);
             id(cost_daily_avg_sensor).publish_state(id(cost_total) / days);
+            
+            // even though the following 3 sensors are also updated in the process_power_script, we're including them here,
+            // otherwise it might take a while before they'll get updated - if power consumption is low and we get very long pulse intervals
+            id(usage_total_sensor).publish_state(id(usage_total));
+            id(cost_total_sensor).publish_state(id(cost_total));
+            id(cost_now_sensor).publish_state(id(cost_now));
+
+            id(usage_day_sensor).publish_state( id(usage_day) );
+            id(cost_day_sensor).publish_state( id(cost_day) );
+            id(usage_hour_sensor).publish_state( id(usage_hour) );
+            id(cost_hour_sensor).publish_state( id(cost_hour) );
           }
-
-          // even though the following 3 sensors are also updated in the process_power_script, we're including them here,
-          // otherwise it might take a while before they'll get updated - if power consumption is low and we get very long pulse intervals
-          id(usage_total_sensor).publish_state(id(usage_total));
-          id(cost_total_sensor).publish_state(id(cost_total));
-          id(cost_now_sensor).publish_state(id(cost_now));
-
-          id(usage_day_sensor).publish_state( id(usage_day) );
-          id(cost_day_sensor).publish_state( id(cost_day) );
-          id(usage_hour_sensor).publish_state( id(usage_hour) );
-          id(cost_hour_sensor).publish_state( id(cost_hour) );
         }
         id(op_flag) = 0;         // making sure the flag operations are one-shot
 
@@ -623,3 +618,4 @@ script:
         //call.set_brightness(0.4);
         call.set_rgb(r, g, b);
         call.perform();
+
