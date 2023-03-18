@@ -461,7 +461,6 @@ interval:
           id(cost_hour) = 0;
           update_count = 0;
         }
-        
         if ( time.is_valid() ) {
           if (update_count == 0) {
             id(op_flag) |= $flag_update_sensors;
@@ -469,7 +468,7 @@ interval:
           update_count++;
           if ( update_count >= $update_interval ) {
             update_count = 0;
-          }        
+          }
           if ( id(op_flag) & $flag_update_sensors ) {
             float days = 0;
             if ( id(uptime_start) == 0 ) {
@@ -487,18 +486,17 @@ interval:
             }
             id(usage_daily_avg_sensor).publish_state(id(usage_total) / days);
             id(cost_daily_avg_sensor).publish_state(id(cost_total) / days);
+            // even though the following 3 sensors are also updated in the process_power_script, we're including them here,
+            // otherwise it might take a while before they'll get updated - if power consumption is low and we get very long pulse intervals
+            id(usage_total_sensor).publish_state(id(usage_total));
+            id(cost_total_sensor).publish_state(id(cost_total));
+            id(cost_now_sensor).publish_state(id(cost_now));
+
+            id(usage_day_sensor).publish_state( id(usage_day) );
+            id(cost_day_sensor).publish_state( id(cost_day) );
+            id(usage_hour_sensor).publish_state( id(usage_hour) );
+            id(cost_hour_sensor).publish_state( id(cost_hour) );
           }
-
-          // even though the following 3 sensors are also updated in the process_power_script, we're including them here,
-          // otherwise it might take a while before they'll get updated - if power consumption is low and we get very long pulse intervals
-          id(usage_total_sensor).publish_state(id(usage_total));
-          id(cost_total_sensor).publish_state(id(cost_total));
-          id(cost_now_sensor).publish_state(id(cost_now));
-
-          id(usage_day_sensor).publish_state( id(usage_day) );
-          id(cost_day_sensor).publish_state( id(cost_day) );
-          id(usage_hour_sensor).publish_state( id(usage_hour) );
-          id(cost_hour_sensor).publish_state( id(cost_hour) );
         }
         id(op_flag) = 0;         // making sure the flag operations are one-shot
 
