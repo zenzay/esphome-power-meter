@@ -253,7 +253,7 @@ button:
     name: 'Shutdown'
 
 binary_sensor:
-    # binary sensor to indicate we got a problem with the power level - it has exceeded the set level.
+    # binary sensor to indicate we got a problem with the power consumption level - it's equal or greather than the specified problem level.
   - platform: template
     name: 'Power Status'
     id: power_status_sensor
@@ -261,8 +261,7 @@ binary_sensor:
     lambda: return ( id(power_pulse_meter).state >= id(power_problem_level).state);
 
 sensor:
-  # kWh Price sensor imported from HA
-  # if you dont have one such sensor, comment this out and use the Number component to set prices, and probably set disable_by_default: false too :)
+  # kWh Price sensor imported from HA - if you dont have one such sensor, comment this out and use the Number component to set prices.
   - platform: homeassistant
     id: ha_price_per_kwh
     entity_id: 'sensor.${ha_price_sensor}'
