@@ -30,7 +30,7 @@ Here's some examples of the pages on the E-Ink Display:
 Components
 -----------
 
-* Wemos D1 Mini ESP32. Any ESP32 should work. An ESP8266 *might* work, but you'll have fewer pins available.
+* An ESP32. Any ESP32 should work. An ESP8266 *might* work, but you'll have fewer pins available.
 * [LM393 Photodiode Sensor module](https://www.mysensors.org/build/light-lm393)
 * [Waveshare 2.9" E-Ink Display](https://www.waveshare.com/2.9inch-e-paper-module.htm)
 * [Push Button](https://www.switchelectronics.co.uk/black-microminiature-5mm-momentary-off-on-push-button-spst-0-5a)
