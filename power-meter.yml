@@ -535,8 +535,8 @@ display:
           it.strftime(col_size * 6, row_size * 16 - 1, id(my_medium_font), TextAlign::CENTER, "%Y-%m-%d  %H:%M", id(esp_time).now());
           it.printf(col_size, row_size * 25, id(my_big_font), TextAlign::CENTER, "%.2f", id(price_per_kwh));
           it.printf(col_size * 3, row_size * 25, id(my_big_font), TextAlign::CENTER, "%.2f", id(cost_now));
-          it.printf(col_size * 5, row_size * 25, id(my_big_font), TextAlign::CENTER, "%.1f", id(usage_total));
-          it.printf(col_size * 7, row_size * 25, id(my_big_font), TextAlign::CENTER, "%.1f", id(cost_total));
+          it.printf(col_size * 5, row_size * 25, id(my_big_font), TextAlign::CENTER, "%.2f", id(usage_total));
+          it.printf(col_size * 7, row_size * 25, id(my_big_font), TextAlign::CENTER, "%.2f", id(cost_total));
           it.print(col_size * 2, row_size * 16, id(my_tiny_font), TextAlign::CENTER,  "WATT");
           it.print(col_size, row_size * 30, id(my_tiny_font), TextAlign::CENTER, "${currency} / kWh");
           it.print(col_size * 3, row_size * 30, id(my_tiny_font), TextAlign::CENTER, "${currency}/h");
