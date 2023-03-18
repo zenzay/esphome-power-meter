@@ -7,6 +7,8 @@ This is the 'extended' version of my ESPHome Power Meter. This version adds an E
 
 I've removed the Power LED from the setup, as I don't feel a need for a LED when we have a display.
 
+It has the same sensors and configuration in HA as the basic version and here's some examples of the pages on the E-Ink Display:
+
 #### Status Page ####
 ![pm_page_1](./assets/pm-page-1.jpg)
 #### Daily Usage Graph ####
