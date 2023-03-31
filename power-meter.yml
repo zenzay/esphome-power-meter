@@ -1,4 +1,4 @@
-# Power Meter v0.9.1
+# Power Meter v0.9.2
 #
 # Power Meter with Cost Tracking.
 #
@@ -8,11 +8,11 @@ substitutions:
   pulse_rate: '1000.0'
   currency: 'DKK'
   pulse_pin: '26'
-  led_pin: '17'
+  led_pin: '14'
   ha_price_sensor: 'nordpool_kwh_dk2_dkk_4_095_025'
   update_interval: '60'
   flag_update_sensors: '1'
-  flag_reset_hourly: '8'
+  flag_reset_monthly: '8'
   flag_reset_daily: '16'
   flag_reset_total: '128'
   flag_reset_mask: '248'
@@ -33,7 +33,7 @@ esphome:
   comment: 'Power Meter with Cost Tracking'
   project:
     name: zenzay.power_meter
-    version: '0.9.1'
+    version: '0.9.2'
 
 preferences:
   flash_write_interval: 1h
@@ -53,23 +53,15 @@ wifi:
   ssid: !secret wifi_ssid
   password: !secret wifi_password
 
-# Global variables. I find global variables very convenient in ESPHome, and see no reason (actually I do),
-# not to use them as if they were a dime a dozen. I gotta believe that fetching the value of a global variable is faster than
-# accessing a state of a sensor. A flat-earther would probably have real problems with this attitude though.
 globals:
-  - id: usage_total         # total kwh usage
-    type: float
-    restore_value: yes
-    initial_value: '0'
-
   - id: usage_day           # daily kwh usage
     type: float
     restore_value: yes
     initial_value: '0'
 
-  - id: usage_hour          # hourly kwh usage
+  - id: usage_month         # monthly kwh usage
     type: float
-    restore_value: no
+    restore_value: yes
     initial_value: '0'
 
   - id: cost_total          # total cost
@@ -82,9 +74,9 @@ globals:
     restore_value: yes
     initial_value: '0'
 
-  - id: cost_hour           # hourly cost
+  - id: cost_month          # monthly cost
     type: float
-    restore_value: no
+    restore_value: yes
     initial_value: '0'
 
   - id: uptime_secs         # uptime second counter
@@ -112,17 +104,9 @@ globals:
     restore_value: no
     initial_value: '0'
 
-  - id: pulse_multiply      # pulse_meter state multiplier. it's set on boot or when user changes the Pulse Rate Number in HA.
-    type: int               # really shouldn't use a global for this. But hey ho, waste some RAM, gain miniscule increase of execution speed, maybe.
-    restore_value: no
-    initial_value: '0'
-
-# Here's comes some numbers so you can set some stuff manually..
-# Some only used for testing and not sure if should stay in and just being disabled by default
 number:
-  # number to set the pulse rate
   - platform: template
-    #id: set_new_pulse_rate
+    id: pulse_rate
     name: 'Set Pulse Rate'
     unit_of_measurement: 'Pulse/kWh'
     icon: mdi:pulse
@@ -132,14 +116,11 @@ number:
     max_value: 10000
     step: 100
     initial_value: 1000
+    restore_value: true
     entity_category: 'config'
-    on_value:
-      lambda: id(pulse_multiply) = (60.0f / x ) * 1000.0f;
 
-  # number to set the total usage
   - platform: template
     name: 'Set Total Usage'
-    #id: set_new_total_usage
     unit_of_measurement: 'kWh'
     icon: mdi:meter-electric
     optimistic: true
@@ -151,12 +132,10 @@ number:
     disabled_by_default: true
     entity_category: 'config'
     on_value:
-      lambda: id(usage_total) = x;
+      lambda: id(set_total_usage_script)->execute(x);
 
-  # number to set the current total cost
   - platform: template
     name: 'Set Total Cost'
-    #id: set_new_total_cost
     unit_of_measurement: $currency
     icon: mdi:cash-100
     optimistic: true
@@ -170,11 +149,8 @@ number:
     on_value:
       lambda: id(cost_total) = x;
 
-  # number to set uptime. note that we're handing it in units of days, in the Uptime number and Uptime sensor, although it's tracked as seconds internally,
-  # although you lose some precision having only 3 accuracy decimals, I, for one, do not count in seconds.
   - platform: template
     name: 'Set Uptime'
-    #id: set_new_uptime
     unit_of_measurement: 'days'
     icon: mdi:timelapse
     optimistic: true
@@ -190,10 +166,8 @@ number:
         id(uptime_start) = 0;
         id(uptime_secs) = ceil(x * 60.0f * 60.0f * 24.0f);
 
-  # number to set the kWh price 'manually'
   - platform: template
     name: 'Set kWh Price'
-    #id: set_kwh_price
     icon: mdi:cash-100
     unit_of_measurement: '${currency}/kWh'
     optimistic: true
@@ -207,7 +181,6 @@ number:
     on_value:
       lambda: id(price_per_kwh) = x;
 
-  # number to set the power problem level. if power consumption goes over, a binary sensor will indicate we got a problem
   - platform: template
     id: power_problem_level
     name: 'Set Problem Level'
@@ -221,10 +194,6 @@ number:
     initial_value: 10000
     entity_category: 'config'
 
-
-# Power LED light, in form of a single RGB LED.
-# I've chosen to use a single element from a WS2812B strip. It only require 3 wires and driving a single LED ain't gonna take much juice.
-# This light is not to have a blinking led - I hate blinking leds - but to indicate the current level of power consumption.
 light:
   - platform: neopixelbus
     variant: WS2812
@@ -232,7 +201,6 @@ light:
     num_leds: 1
     type: GRB
     name: 'Power LED'
-    #internal: True
     id: power_led
     default_transition_length: 0.1s
     color_correct: [50%, 50%, 50%]
@@ -240,21 +208,17 @@ light:
     entity_category: 'config'
 
 button:
-  # Button to reset total and daily counts
   - platform: template
     name: 'Reset Totals'
-    #id: reset_counts_button
     device_class: restart
     entity_category: 'config'
     on_press:
       lambda: id(op_flag) = $flag_reset_mask;
 
-    # Shutdown Button. Remember to use this before unplugging device, to make sure totals are saved
   - platform: shutdown
     name: 'Shutdown'
 
 binary_sensor:
-    # binary sensor to indicate we got a problem with the power level - it has exceeded the set level.
   - platform: template
     name: 'Power Status'
     id: power_status_sensor
@@ -262,21 +226,12 @@ binary_sensor:
     lambda: return ( id(power_pulse_meter).state >= id(power_problem_level).state);
 
 sensor:
-  # kWh Price sensor imported from HA
-  # if you dont have one such sensor, comment this out and use the Number component to set prices, and probably set disable_by_default: false too :)
   - platform: homeassistant
     id: ha_price_per_kwh
     entity_id: 'sensor.${ha_price_sensor}'
     on_value:
       lambda: id(price_per_kwh) = x;
 
-  # pulse_meter component
-  # The pulse_meter component, unfortunately, does not keep updating when the power consumpption stays the same (constant power consumption, say 1000 W).
-  # It always updates its total: sensor (ofc), but, after a few times, does not apply the filters or call on_value: (or on_raw_value:) on the pulse_meter.
-  # This makes sense; there's no need to waste bandwidth, plus power consumption most often fluctuates and usually dont stay fixed for long.
-  # However, as the intention is to track energy and cost on a time-basis 'idling' cannot be accepted and thus we end up having to 'hook' into
-  # the total: sensor from the pulse_meter.
-  # Note: The 'lack' of updates in the pulse_meter component also means that changing the pulse-rate will not take effect until next change in power consumption.
   - platform: pulse_meter
     name: 'Power Use'
     id: power_pulse_meter
@@ -289,22 +244,19 @@ sensor:
     internal_filter_mode: EDGE
     internal_filter: 50ms
     filters:
-      - lambda: return x * id(pulse_multiply);
+      - lambda: return x * (60.0f / id(pulse_rate).state ) * 1000.0f;
     total:
       id: power_pulse_total
+      name: 'Usage Total'
+      unit_of_measurement: 'kWh'
+      icon: mdi:meter-electric
+      state_class: total_increasing
+      device_class: energy
+      accuracy_decimals: 3
+      filters:
+        - lambda: return x / id(pulse_rate).state;
       on_value:
         script.execute: process_power_script
-
-  # and now some template sensors to publish the different states
-  - platform: template
-    name: 'Usage Total'
-    id: usage_total_sensor
-    unit_of_measurement: 'kWh'
-    icon: mdi:meter-electric
-    state_class: total_increasing
-    device_class: energy
-    accuracy_decimals: 3
-    update_interval: never
 
   - platform: template
     name: 'Usage Daily'
@@ -317,8 +269,8 @@ sensor:
     update_interval: never
 
   - platform: template
-    name: 'Usage Hourly'
-    id: usage_hour_sensor
+    name: 'Usage Monthly'
+    id: usage_month_sensor
     unit_of_measurement: 'kWh'
     icon: mdi:meter-electric
     state_class: total_increasing
@@ -354,9 +306,9 @@ sensor:
     update_interval: never
 
   - platform: template
-    name: 'Cost Hourly'
+    name: 'Cost Monthly'
     icon: mdi:cash-100
-    id: cost_hour_sensor
+    id: cost_month_sensor
     unit_of_measurement: $currency
     accuracy_decimals: 3
     device_class: monetary
@@ -389,42 +341,17 @@ sensor:
     update_interval: never
 
 time:
-  # home assistant time source.
   - platform: homeassistant
     id: esp_time
-  # you could also set it up as a SNTP time source
-  # use public servers or set up your router to provide a NTP server
-  # - platform: sntp
-  #   id: esp_time
-  #   servers: 192.168.1.1
-  # We could also use a DS1307 RTC module instead, but I'm not sure if it has any huge advantages.
 
-
-# Here comes a 1 second interval with a single lambda action that runs every second... just for fun.. nah bro, seriously, listen, it's fo' real, check it out...
-# Using intervals with a duration of 1 second can have a drawback though: Actions might happen up to a second late.
-# In the bigger scheme of things, this might not mean much, but it's annoying. Let's say you reset the total count at midnight on the 1st of the month.
-# The daily count will also be automatically reset - because it happens to be a new day - but this can happen up to a second later and possibly
-# make the total and daily out of sync. If you at midnight have a power consumption of 1000 W and then do a 'manual' reset
-# of the total count (clicking the button precisely at midnight), the daily count might end up being up to 0.001 kWh behind the total,
-# because it will be reset in the interval, on the next or (if you're lucky) current loop.
-# So the options, as I see them, are:
-# 1. Acceptance. Making toasties at midnight is forbidden! This is the way.
-# 2. Shorten the interval. I feel like having 1 second interval is demanding enough. I'm not keen on shortening it.
-# 3. Do all the work in the interval loop, and use some global flags to signal when a reset should take place. (again with the globals!?!)
-# 4. Use cron: in an on_time automation instead. But that's looping every second anyhow, and an interval: is more lightweight. I like it light.
-# 5. Move the daily reset into the process power script. That way I need neither cron or intervals. However, that could mean very late resets.
-# 6. Mow the lawn. Spring is on the doorstep and it needs it badly.
-#
-# After some divining, head scratching and calling on higher powers, I have decided to implement option 3 and option 6. I have spoken!
 interval:
   - interval: 1s
     then:
       lambda: |-
-        static uint32_t update_count = 0;         // count intervals between updates
-        static uint32_t last_day_of_year = 0;     // day of the year the last time we reset daily
-        static uint32_t last_hour_today = 0;      // hour today when we last reset hourly
-        auto time = id(esp_time).now();           // getting the time
-
+        static uint32_t update_count = 0;
+        static uint32_t last_day_of_year = 0;
+        static uint32_t last_month = 0;
+        auto time = id(esp_time).now();
         if ( time.is_valid() )
         {
           if ( time.day_of_year != last_day_of_year ) {
@@ -433,21 +360,21 @@ interval:
             }
             last_day_of_year = time.day_of_year;
           }
-          if ( time.hour != last_hour_today ) {
-            if (last_hour_today != 0) {
-              id(op_flag) |= $flag_reset_hourly;
+          if ( time.month != last_month ) {
+            if (last_month != 0) {
+              id(op_flag) |= $flag_reset_monthly;
             }
-            last_hour_today = time.hour;
+            last_month = time.month;
           }
         }
         if ( id(op_flag) & $flag_reset_total ) {
           ESP_LOGD("debug", "reset total");
           id(uptime_start) = 0;
           id(uptime_secs) = 0;
-          id(usage_total) = 0;
           id(cost_total) = 0;
           id(cost_now) = 0;
           update_count = 0;
+          id(set_total_usage_script)->execute(0);
         }
         if ( id(op_flag) & $flag_reset_daily ) {
           ESP_LOGD("debug", "reset daily");
@@ -455,10 +382,10 @@ interval:
           id(cost_day) = 0;
           update_count = 0;
         }
-        if ( id(op_flag) & $flag_reset_hourly ) {
-          ESP_LOGD("debug", "reset hourly");
-          id(usage_hour) = 0;
-          id(cost_hour) = 0;
+        if ( id(op_flag) & $flag_reset_monthly ) {
+          ESP_LOGD("debug", "reset monthly");
+          id(usage_month) = 0;
+          id(cost_month) = 0;
           update_count = 0;
         }
         if ( time.is_valid() ) {
@@ -484,25 +411,28 @@ interval:
             if ( days < 1.0 ) {
               days = 1.0;   // welcome to kludgeville, but otherwise we'll get crazy high daily averages with uptimes less than 1 day
             }
-            id(usage_daily_avg_sensor).publish_state(id(usage_total) / days);
+            id(usage_daily_avg_sensor).publish_state(id(power_pulse_total).state / days);           
             id(cost_daily_avg_sensor).publish_state(id(cost_total) / days);
-            // even though the following 3 sensors are also updated in the process_power_script, we're including them here,
-            // otherwise it might take a while before they'll get updated - if power consumption is low and we get very long pulse intervals
-            id(usage_total_sensor).publish_state(id(usage_total));
             id(cost_total_sensor).publish_state(id(cost_total));
             id(cost_now_sensor).publish_state(id(cost_now));
-
             id(usage_day_sensor).publish_state( id(usage_day) );
             id(cost_day_sensor).publish_state( id(cost_day) );
-            id(usage_hour_sensor).publish_state( id(usage_hour) );
-            id(cost_hour_sensor).publish_state( id(cost_hour) );
+            id(usage_month_sensor).publish_state( id(usage_month) );
+            id(cost_month_sensor).publish_state( id(cost_month) );
           }
         }
         id(op_flag) = 0;         // making sure the flag operations are one-shot
 
 script:
-  # process power script - process the power pulses - track energy and costs.
-  # a cheap ESPHome Total_Daily_Energy sensor knock-off with frills
+  - id: set_total_usage_script
+    parameters:
+      new_total: float
+    mode: single
+    then:
+      - pulse_meter.set_total_pulses:
+          id: power_pulse_meter
+          value: !lambda 'return ceil(new_total * id(pulse_rate).state);'
+
   - id: process_power_script
     mode: single
     then:
@@ -513,7 +443,6 @@ script:
         // energy = delta_hours * (old_state + new_state) / 2.0;    // Trapezoid
         static uint32_t last_pulse_ms = 0;
         const uint32_t now = millis();
-
         // we wont process the very first pulse, as we have no idea how long ago the last one was,
         // We *could* use a global last_pulse_ms variable and set it at boot? That seems like overkill though (says the guy who loves wasting globals)
         // If this were a custom component we could do this at setup
@@ -524,43 +453,30 @@ script:
         // calculate hours since last pulse
         const float delta_hours = (now - last_pulse_ms) / 1000.0f / 60.0f / 60.0f;
         last_pulse_ms = now;    // remember last pulse milliseconds
-
         // get the power state in kWh
         float new_state = id(power_pulse_meter).state / 1000.0f;
         // calculate energy consumption and cost
         const float energy = delta_hours * new_state;
         const float cost = energy * id(price_per_kwh);
-        // it all adds up...
-        id(usage_total) += energy;
         id(usage_day) += energy;
-        id(usage_hour) += energy;
+        id(usage_month) += energy;
         id(cost_total) += cost;
         id(cost_day) += cost;
-        id(cost_hour) += cost;
+        id(cost_month) += cost;
         // calculate current hourly cost
         //ESP_LOGD("debug", "Power: %.3f - Price: %.3f", new_state, id(price_per_kwh));
         id(cost_now) = new_state * id(price_per_kwh);
-
         // publish states to the sensors we want 'live' updates on (the rest can wait for the update_interval)
-        id(usage_total_sensor).publish_state(id(usage_total));
+        //id(usage_total_sensor).publish_state(id(usage_total));
         id(cost_total_sensor).publish_state(id(cost_total));
         id(cost_now_sensor).publish_state(id(cost_now));
-
         // if you uncomment the following you'll also update the rest of the sensors at each pulse (in the interval).
         // id(op_flag) |= $flag_update_sensors;
-
         // if LED is on, set the color
         if (id(power_led).current_values.is_on()) {
           id(set_power_led_script).execute();
         }
 
-  # set_power_led script
-  # set the colour of led from green to red according to power consumption related to power problem level
-  # using HSV color space and converts to RGB before setting color
-  # the algoritm used to convert hsv to rgb can be found here: https://www.cs.rit.edu/~ncs/color/t_convert.html
-  # color scheme:
-  # power 0% -> 99% = green to orange gradient
-  # power 100 -> 220+ = red to purple
   - id: set_power_led_script
     mode: restart
     then:
