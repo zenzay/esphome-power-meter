@@ -24,7 +24,7 @@ To test the accuracy of the Power Meter, I created a simple Arduino Sketch to si
 
 ## HA Example Cards ##
 ![HA Example Cards](./assets/images/pm-sensors.png)
-
+Note: Hourly have been changed to Monthly in latest version.
 
 Components
 -----------
