@@ -54,7 +54,7 @@ wifi:
   password: !secret wifi_password
 
 globals:
-  - id: usage_day           # daily kwh usage
+  - id: usage_total         # total kwh usage
     type: float
     restore_value: yes
     initial_value: '0'
@@ -64,17 +64,22 @@ globals:
     restore_value: yes
     initial_value: '0'
 
+  - id: usage_day           # daily kwh usage
+    type: float
+    restore_value: yes
+    initial_value: '0'
+
   - id: cost_total          # total cost
     type: float
     restore_value: yes
     initial_value: '0'
 
-  - id: cost_day            # daily cost
+  - id: cost_month          # monthly cost
     type: float
     restore_value: yes
     initial_value: '0'
 
-  - id: cost_month          # monthly cost
+  - id: cost_day            # daily cost
     type: float
     restore_value: yes
     initial_value: '0'
@@ -99,7 +104,7 @@ globals:
     restore_value: no
     initial_value: '0'
 
-  - id: op_flag             # bitmask for setting operational flags (like reset total count).
+  - id: op_flag             # bitmask for operational flags
     type: int
     restore_value: no
     initial_value: '0'
@@ -132,7 +137,7 @@ number:
     disabled_by_default: true
     entity_category: 'config'
     on_value:
-      lambda: id(set_total_usage_script)->execute(x);
+      lambda: id(usage_total) = x;
 
   - platform: template
     name: 'Set Total Cost'
@@ -247,16 +252,18 @@ sensor:
       - lambda: return x * (60.0f / id(pulse_rate).state ) * 1000.0f;
     total:
       id: power_pulse_total
-      name: 'Usage Total'
-      unit_of_measurement: 'kWh'
-      icon: mdi:meter-electric
-      state_class: total_increasing
-      device_class: energy
-      accuracy_decimals: 3
-      filters:
-        - lambda: return x / id(pulse_rate).state;
       on_value:
         script.execute: process_power_script
+
+  - platform: template
+    name: 'Usage Total'
+    id: usage_total_sensor
+    unit_of_measurement: 'kWh'
+    icon: mdi:meter-electric
+    state_class: total_increasing
+    device_class: energy
+    accuracy_decimals: 3
+    update_interval: never
 
   - platform: template
     name: 'Usage Daily'
@@ -366,15 +373,15 @@ interval:
             }
             last_month = time.month;
           }
-        }
+        }        
         if ( id(op_flag) & $flag_reset_total ) {
           ESP_LOGD("debug", "reset total");
           id(uptime_start) = 0;
           id(uptime_secs) = 0;
+          id(usage_total) = 0;
           id(cost_total) = 0;
           id(cost_now) = 0;
           update_count = 0;
-          id(set_total_usage_script)->execute(0);
         }
         if ( id(op_flag) & $flag_reset_daily ) {
           ESP_LOGD("debug", "reset daily");
@@ -413,26 +420,22 @@ interval:
             }
             id(usage_daily_avg_sensor).publish_state(id(power_pulse_total).state / days);           
             id(cost_daily_avg_sensor).publish_state(id(cost_total) / days);
-            id(cost_total_sensor).publish_state(id(cost_total));
-            id(cost_now_sensor).publish_state(id(cost_now));
             id(usage_day_sensor).publish_state( id(usage_day) );
             id(cost_day_sensor).publish_state( id(cost_day) );
+            
             id(usage_month_sensor).publish_state( id(usage_month) );
             id(cost_month_sensor).publish_state( id(cost_month) );
+            if ( id(op_flag) & $flag_reset_total )            
+            {
+              id(usage_total_sensor).publish_state(id(usage_total));
+              id(cost_total_sensor).publish_state(id(cost_total));
+              id(cost_now_sensor).publish_state(id(cost_now));
+            }
           }
         }
         id(op_flag) = 0;         // making sure the flag operations are one-shot
 
 script:
-  - id: set_total_usage_script
-    parameters:
-      new_total: float
-    mode: single
-    then:
-      - pulse_meter.set_total_pulses:
-          id: power_pulse_meter
-          value: !lambda 'return ceil(new_total * id(pulse_rate).state);'
-
   - id: process_power_script
     mode: single
     then:
@@ -444,8 +447,6 @@ script:
         static uint32_t last_pulse_ms = 0;
         const uint32_t now = millis();
         // we wont process the very first pulse, as we have no idea how long ago the last one was,
-        // We *could* use a global last_pulse_ms variable and set it at boot? That seems like overkill though (says the guy who loves wasting globals)
-        // If this were a custom component we could do this at setup
         if (last_pulse_ms == 0) {
           last_pulse_ms = now;
           return;
@@ -455,23 +456,29 @@ script:
         last_pulse_ms = now;    // remember last pulse milliseconds
         // get the power state in kWh
         float new_state = id(power_pulse_meter).state / 1000.0f;
+
         // calculate energy consumption and cost
         const float energy = delta_hours * new_state;
         const float cost = energy * id(price_per_kwh);
+        id(usage_total) += energy;
         id(usage_day) += energy;
         id(usage_month) += energy;
         id(cost_total) += cost;
         id(cost_day) += cost;
         id(cost_month) += cost;
+
         // calculate current hourly cost
         //ESP_LOGD("debug", "Power: %.3f - Price: %.3f", new_state, id(price_per_kwh));
         id(cost_now) = new_state * id(price_per_kwh);
+
         // publish states to the sensors we want 'live' updates on (the rest can wait for the update_interval)
-        //id(usage_total_sensor).publish_state(id(usage_total));
+        id(usage_total_sensor).publish_state(id(usage_total));
         id(cost_total_sensor).publish_state(id(cost_total));
         id(cost_now_sensor).publish_state(id(cost_now));
+
         // if you uncomment the following you'll also update the rest of the sensors at each pulse (in the interval).
         // id(op_flag) |= $flag_update_sensors;
+
         // if LED is on, set the color
         if (id(power_led).current_values.is_on()) {
           id(set_power_led_script).execute();
