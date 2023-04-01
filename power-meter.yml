@@ -418,7 +418,7 @@ interval:
             if ( days < 1.0 ) {
               days = 1.0;   // welcome to kludgeville, but otherwise we'll get crazy high daily averages with uptimes less than 1 day
             }
-            id(usage_daily_avg_sensor).publish_state(id(power_pulse_total).state / days);           
+            id(usage_daily_avg_sensor).publish_state(id(usage_total) / days);           
             id(cost_daily_avg_sensor).publish_state(id(cost_total) / days);
             id(usage_day_sensor).publish_state( id(usage_day) );
             id(cost_day_sensor).publish_state( id(cost_day) );
@@ -544,7 +544,6 @@ script:
             break;
         }
         auto call = id(power_led).turn_on();
-        //call.set_brightness(0.4);
         call.set_rgb(r, g, b);
         call.perform();
 
