@@ -8,8 +8,10 @@ substitutions:
   pulse_rate: '1000.0'
   currency: 'DKK'
   pulse_pin: '26'
-  led_pin: '17'
-  ha_price_sensor: 'nordpool_kwh_dk2_dkk_4_095_025'
+  led_pin: '14'
+  ha_price_sensor: 'el_cost_price'
+  ha_price_default: '2'
+# ha_price_sensor: 'nordpool_kwh_dk2_dkk_4_095_025'
   update_interval: '60'
   flag_update_sensors: '1'
   flag_reset_monthly: '8'
@@ -48,6 +50,7 @@ logger:
 api:
 
 ota:
+  password: "8a3b173cf511422302c6d6a63addf926"
 
 wifi:
   ssid: !secret wifi_ssid
@@ -180,7 +183,7 @@ number:
     min_value: 0
     max_value: 100
     step: 0.001
-    initial_value: 0
+    initial_value: $ha_price_default
     disabled_by_default: true
     entity_category: 'config'
     on_value:
@@ -235,8 +238,15 @@ sensor:
     id: ha_price_per_kwh
     entity_id: 'sensor.${ha_price_sensor}'
     on_value:
-      lambda: id(price_per_kwh) = x;
-
+      lambda: |-
+        if (isnan(x)) {
+          ESP_LOGD("main", "HA Price: isNAN");
+        } else if ((x <= 0) || (x > 10)) {  
+          ESP_LOGD("main", "HA Price: invalid range (%.3)", x);
+        } else {
+          ESP_LOGD("main", "HA Price: New = %.3f", x);  
+          id(price_per_kwh) = x;
+        }
   - platform: pulse_meter
     name: 'Power Use'
     id: power_pulse_meter
@@ -544,6 +554,7 @@ script:
             break;
         }
         auto call = id(power_led).turn_on();
+        //call.set_brightness(0.4);
         call.set_rgb(r, g, b);
         call.perform();
 
