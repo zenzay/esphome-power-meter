@@ -256,7 +256,7 @@ sensor:
     accuracy_decimals: 0
     pin: $pulse_pin
     internal_filter_mode: EDGE
-    internal_filter: 50ms
+    internal_filter: 100ms
     filters:
       - lambda: return x * (60.0f / id(pulse_rate).state ) * 1000.0f;
     total:
