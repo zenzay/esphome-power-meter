@@ -307,7 +307,14 @@ sensor:
     id: ha_price_per_kwh
     entity_id: 'sensor.${ha_price_sensor}'
     on_value:
-      lambda: id(price_per_kwh) = x;
+        if (isnan(x)) {
+          ESP_LOGD("main", "HA Price: isNAN");
+        } else if ((x <= 0) || (x > 10)) {  
+          ESP_LOGD("main", "HA Price: invalid range (%.3)", x);
+        } else {
+          ESP_LOGD("main", "HA Price: New = %.3f", x);  
+          id(price_per_kwh) = x;
+        }
 
   - platform: pulse_meter
     name: 'Power Use'
