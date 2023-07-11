@@ -1,4 +1,4 @@
-# Power Meter v0.9.2
+# Power Meter v0.9.3
 #
 # Power Meter with Cost Tracking.
 #
@@ -9,8 +9,8 @@ substitutions:
   currency: 'DKK'
   pulse_pin: '26'
   led_pin: '14'
-  ha_price_sensor: 'nordpool_kwh_dk2_dkk_4_095_025'
   ha_price_default: '2'
+  ha_price_sensor: 'nordpool_kwh_dk2_dkk_4_095_025'
   update_interval: '60'
   flag_update_sensors: '1'
   flag_reset_monthly: '8'
@@ -34,7 +34,7 @@ esphome:
   comment: 'Power Meter with Cost Tracking'
   project:
     name: zenzay.power_meter
-    version: '0.9.2'
+    version: '0.9.3'
 
 preferences:
   flash_write_interval: 1h
@@ -221,6 +221,15 @@ button:
     entity_category: 'config'
     on_press:
       lambda: id(op_flag) = $flag_reset_mask;
+
+  - platform: template
+    name: 'Sync Monthly'
+    entity_category: 'config'
+    on_press:
+      lambda: |-
+        id(cost_month) = id(cost_total);
+        id(usage_month) = id(usage_total);
+
 
   - platform: shutdown
     name: 'Shutdown'
@@ -413,7 +422,7 @@ interval:
             update_count = 0;
           }
           if ( id(op_flag) & $flag_update_sensors ) {
-            float days = 0;
+            float d = 0;
             if ( id(uptime_start) == 0 ) {
               id(uptime_start) = time.timestamp - id(uptime_secs);
             }
@@ -421,14 +430,13 @@ interval:
               id(uptime_secs) = time.timestamp - id(uptime_start);
             }
             if ( id(uptime_secs) > 0 ) {
-              days = id(uptime_secs) / 60.0f / 60.0f / 24.0f;
+              d = id(uptime_secs) / 60.0f / 60.0f / 24.0f;
             }
-            id(uptime_sensor).publish_state(days);
-            if ( days < 1.0 ) {
-              days = 1.0;   // welcome to kludgeville, but otherwise we'll get crazy high daily averages with uptimes less than 1 day
-            }
-            id(usage_daily_avg_sensor).publish_state(id(usage_total) / days);           
-            id(cost_daily_avg_sensor).publish_state(id(cost_total) / days);
+            id(uptime_sensor).publish_state(d);
+
+            id(usage_daily_avg_sensor).publish_state(id(usage_month) / time.day_of_month);           
+            id(cost_daily_avg_sensor).publish_state(id(cost_month) / time.day_of_month);
+
             id(usage_day_sensor).publish_state( id(usage_day) );
             id(cost_day_sensor).publish_state( id(cost_day) );
             
