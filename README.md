@@ -23,6 +23,7 @@ Here's some examples of the pages on the E-Ink Display:
 
 
 ## Notes
+* This extended branch is seriously behind the main branch and will probably not be updated any more.
 * The display code is quite messy and really should be rewritten.
 * Put the pictures from the images folder in the ESPHome folder before installing.
 * Achieving transparency when drawing images on E-Ink Displays in ESPHome can be tricky. If a pixel is anything other than 100% transparent, it will turn up black on the display. I'm not sure if it was a fault of mine or a quirk of GIMP, but I was exporting PNGs from GIMP that should've be 100% transparent, and looked it to the naked eye, but were apparently not 100% and turned up black on the display.
