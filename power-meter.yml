@@ -252,7 +252,8 @@ button:
         id(update_price_kwh_avg).execute();
 
   - platform: template
-    name: 'Sync Monthly'
+    name: 'Sync Monthly to Total'
+    disabled_by_default: true
     entity_category: 'config'
     on_press:
       lambda: |-
