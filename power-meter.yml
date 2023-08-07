@@ -103,7 +103,7 @@ globals:
 
   - id: price_kwh_avg       # average kwh price. Will be used if 'Use KwH Price Average' switch is set.
     type: float
-    restore_value: no
+    restore_value: yes
     initial_value: '0'
 
   - id: uptime_start        # uptime start timestamp
