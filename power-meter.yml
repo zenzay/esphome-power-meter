@@ -563,9 +563,6 @@ script:
         id(usage_total_sensor).update();
         id(cost_total_sensor).update();
 
-        // if you uncomment the following you'll also update the rest of the sensors at each pulse (in the interval).
-        // id(op_flag) |= $flag_update_sensors;
-
         // if LED is on, set the color
         if (id(power_led).current_values.is_on()) {
           id(set_power_led_script).execute();
