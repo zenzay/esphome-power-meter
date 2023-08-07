@@ -1,4 +1,4 @@
-# Power Meter v0.9.3
+# Power Meter v0.9.4
 #
 # Power Meter with Cost Tracking.
 #
@@ -34,7 +34,7 @@ esphome:
   comment: 'Power Meter with Cost Tracking'
   project:
     name: zenzay.power_meter
-    version: '0.9.3'
+    version: '0.9.4'
 
 preferences:
   flash_write_interval: 1h
@@ -97,6 +97,11 @@ globals:
     initial_value: '0'
 
   - id: price_per_kwh       # price per kwh, should be automatically imported from HA, but can also be set manually
+    type: float
+    restore_value: no
+    initial_value: '0'
+
+  - id: price_kwh_avg       # average kwh price. Will be used if 'Use KwH Price Average' switch is set.
     type: float
     restore_value: no
     initial_value: '0'
@@ -185,8 +190,10 @@ number:
     initial_value: $ha_price_default
     disabled_by_default: true
     entity_category: 'config'
-    on_value:
-      lambda: id(price_per_kwh) = x;
+    on_value:      
+      lambda: |-
+        id(price_per_kwh) = x;
+        id(update_price_kwh_avg).execute();
 
   - platform: template
     id: power_problem_level
@@ -214,6 +221,20 @@ light:
     restore_mode: ALWAYS_OFF
     entity_category: 'config'
 
+switch:
+  - platform: template
+    name: "Use kWh Price Average"
+    id: use_kwh_price_average
+    icon: "mdi:toggle-switch-outline"
+    optimistic: True
+    entity_category: 'config'
+    turn_on_action:
+      - lambda: |-
+          id(op_flag) |= $flag_update_sensors;
+    turn_off_action:
+      - lambda: |-
+          id(op_flag) |= $flag_update_sensors;
+
 button:
   - platform: template
     name: 'Reset Totals'
@@ -223,13 +244,20 @@ button:
       lambda: id(op_flag) = $flag_reset_mask;
 
   - platform: template
+    name: 'Reset kWh Price Average'
+    entity_category: 'config'
+    on_press:
+      lambda: |-
+        id(price_kwh_avg) = 0;
+        id(update_price_kwh_avg).execute();
+
+  - platform: template
     name: 'Sync Monthly'
     entity_category: 'config'
     on_press:
       lambda: |-
         id(cost_month) = id(cost_total);
         id(usage_month) = id(usage_total);
-
 
   - platform: shutdown
     name: 'Shutdown'
@@ -247,14 +275,11 @@ sensor:
     entity_id: 'sensor.${ha_price_sensor}'
     on_value:
       lambda: |-
-        if (isnan(x)) {
-          ESP_LOGD("main", "HA Price: isNAN");
-        } else if ((x <= 0) || (x > 10)) {  
-          ESP_LOGD("main", "HA Price: invalid range (%.3)", x);
-        } else {
-          ESP_LOGD("main", "HA Price: New = %.3f", x);  
+        if (!(isnan(x))) {
           id(price_per_kwh) = x;
+          id(update_price_kwh_avg).execute();
         }
+
   - platform: pulse_meter
     name: 'Power Use'
     id: power_pulse_meter
@@ -282,6 +307,7 @@ sensor:
     device_class: energy
     accuracy_decimals: 3
     update_interval: never
+    lambda: return id(usage_total);
 
   - platform: template
     name: 'Usage Daily'
@@ -292,6 +318,7 @@ sensor:
     device_class: energy
     accuracy_decimals: 3
     update_interval: never
+    lambda: return id(usage_day);
 
   - platform: template
     name: 'Usage Monthly'
@@ -302,6 +329,7 @@ sensor:
     device_class: energy
     accuracy_decimals: 3
     update_interval: never
+    lambda: return id(usage_month);
 
   - platform: template
     name: 'Cost Now'
@@ -309,6 +337,16 @@ sensor:
     icon: mdi:cash-fast
     accuracy_decimals: 3
     unit_of_measurement: '${currency}/h'
+    device_class: monetary
+    update_interval: never
+    lambda: return id(cost_now);
+
+  - platform: template
+    name: 'kWh Price Average'
+    id: kwh_price_average
+    icon: mdi:cash-100
+    accuracy_decimals: 3
+    unit_of_measurement: $currency
     device_class: monetary
     update_interval: never
 
@@ -320,6 +358,12 @@ sensor:
     accuracy_decimals: 3
     device_class: monetary
     update_interval: never
+    lambda: |-
+      if (id(use_kwh_price_average).state) {
+        return id(price_kwh_avg) * id(usage_total);
+      } else {
+        return id(cost_total);
+      }
 
   - platform: template
     name: 'Cost Daily'
@@ -329,6 +373,12 @@ sensor:
     accuracy_decimals: 3
     device_class: monetary
     update_interval: never
+    lambda: |-
+      if (id(use_kwh_price_average).state) {
+        return id(price_kwh_avg) * id(usage_day);
+      } else {
+        return id(cost_day);
+      }
 
   - platform: template
     name: 'Cost Monthly'
@@ -338,6 +388,12 @@ sensor:
     accuracy_decimals: 3
     device_class: monetary
     update_interval: never
+    lambda: |-
+      if (id(use_kwh_price_average).state) {
+        return id(price_kwh_avg) * id(usage_month);
+      } else {
+        return id(cost_month);
+      }
 
   - platform: template
     name: 'Cost Daily Average'
@@ -433,26 +489,37 @@ interval:
               d = id(uptime_secs) / 60.0f / 60.0f / 24.0f;
             }
             id(uptime_sensor).publish_state(d);
-
+            id(usage_day_sensor).update();            
+            id(usage_month_sensor).update();
+            id(usage_total_sensor).update();
             id(usage_daily_avg_sensor).publish_state(id(usage_month) / time.day_of_month);           
-            id(cost_daily_avg_sensor).publish_state(id(cost_month) / time.day_of_month);
-
-            id(usage_day_sensor).publish_state( id(usage_day) );
-            id(cost_day_sensor).publish_state( id(cost_day) );
-            
-            id(usage_month_sensor).publish_state( id(usage_month) );
-            id(cost_month_sensor).publish_state( id(cost_month) );
-            if ( id(op_flag) & $flag_reset_total )            
-            {
-              id(usage_total_sensor).publish_state(id(usage_total));
-              id(cost_total_sensor).publish_state(id(cost_total));
-              id(cost_now_sensor).publish_state(id(cost_now));
+            id(cost_now_sensor).update();
+            id(cost_day_sensor).update();
+            id(cost_month_sensor).update();
+            id(cost_total_sensor).update();
+            if (id(use_kwh_price_average).state) {
+              d = id(cost_month);
+            } else {
+              d = id(usage_month) * id(price_kwh_avg);
             }
+            id(cost_daily_avg_sensor).publish_state(d / time.day_of_month);
           }
         }
         id(op_flag) = 0;         // making sure the flag operations are one-shot
 
 script:
+  - id: update_price_kwh_avg
+    mode: single
+    then:
+      lambda: |-
+        static int count = 0;        
+        if (id(price_kwh_avg) == 0) {
+          count = 0;
+        }
+        count++;
+        id(price_kwh_avg) += (id(price_per_kwh) - id(price_kwh_avg)) / count;			
+        id(kwh_price_average).publish_state(id(price_kwh_avg));
+        
   - id: process_power_script
     mode: single
     then:
@@ -486,12 +553,15 @@ script:
 
         // calculate current hourly cost
         //ESP_LOGD("debug", "Power: %.3f - Price: %.3f", new_state, id(price_per_kwh));
-        id(cost_now) = new_state * id(price_per_kwh);
-
+        if (id(use_kwh_price_average).state) {
+          id(cost_now) = new_state * id(price_kwh_avg);
+        } else {
+          id(cost_now) = new_state * id(price_per_kwh);
+        }
         // publish states to the sensors we want 'live' updates on (the rest can wait for the update_interval)
-        id(usage_total_sensor).publish_state(id(usage_total));
-        id(cost_total_sensor).publish_state(id(cost_total));
-        id(cost_now_sensor).publish_state(id(cost_now));
+        id(cost_now_sensor).update();
+        id(usage_total_sensor).update();
+        id(cost_total_sensor).update();
 
         // if you uncomment the following you'll also update the rest of the sensors at each pulse (in the interval).
         // id(op_flag) |= $flag_update_sensors;
