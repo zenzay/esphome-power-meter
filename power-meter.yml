@@ -49,7 +49,7 @@ logger:
 api:
 
 ota:
-  password: !secret_power_meter_ota_password
+  password: !secret ota_password_power_meter
 
 wifi:
   ssid: !secret wifi_ssid
