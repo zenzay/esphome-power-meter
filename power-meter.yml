@@ -521,8 +521,6 @@ script:
     mode: single
     then:
       lambda: |-
-        static uint32_t last_pulse_ms = 0;
-        const uint32_t now = millis();
         const float energy = 1 / id(pulse_rate).state;
         const float cost = energy * id(price_per_kwh);
         
@@ -533,17 +531,10 @@ script:
         id(cost_day) += cost;
         id(cost_month) += cost;
 
-        if ( last_pulse_ms == 0) {
-          last_pulse_ms = now;
+        if ( isnan(id(power_pulse_meter).state) ) {
           return;
         }
-
-        const float delta = (now - last_pulse_ms);
-        const float kwh_use = 3.6f * id(pulse_rate).state / delta;
-        //ESP_LOGD("debug", "Power: %.6f", kwh_use);
-
-        last_pulse_ms = now;    // remember last pulse milliseconds
-
+        const kwh_use = id(power_pulse_meter).state / 1000.0f
         if (id(use_kwh_price_average).state) {
           id(cost_now) = kwh_use * id(price_kwh_avg);
         } else {
