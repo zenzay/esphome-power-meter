@@ -23,6 +23,16 @@ To test the accuracy of the Power Meter, I created a simple Arduino Sketch to si
 * If this was to have any proper value, it should probably be in the form of a ESPHome Custom Component.
 * This hasn't been tested extensively and I take absolutely no responsibility for any suprisingly large electricity bills.
 
+#### Note on latest update
+
+Lastest update was a considerable one.
+
+I realised (duh) that the process_power script will be called on each pulse of the pulse meter. So I have replaced a lot of the calculations with a simple ``` cost = 1 / pulse_rate * khw_price ``` calculation that should suffice. That do mean that I instead have to calculate the wattage, so I can use it when calculating the value for the Cost Now sensor.
+
+Also.. and here it comes: ESPHome was complaining that I was spending too much time in the Interval: and so I have had to forego of manually controlling the exact timing on updates of the sensors. This means that the sensors is now updating using their own leisurely time intervals and not as before when something actually happened. For example: The Reset Totals Button now seems to not work - it does, but it wont show until next sensor update. It was mainly the Interval: and the process_power script ESPHome kept complaing about. 30ms-40ms is the max apparently. So a lot of the code which was meant for updating sensors is redundant now. I've removed some of it but not everything (the stuff that doesn't matter). ESPHome also complains about the set_power_led script taking too long - I dont use it myself, and will probably just be removing it - can't be arsed to do much more to this Power Meter script.
+
+Please note: As a lot of the code has been rewritten (and some debugging), I suspect that there might be some bugs in it. It seems to work, but only time will tell.
+
 
 ## Device Sensors and Configuration ##
 ![Sensors](./assets/images/power_meter_sensors.png)
