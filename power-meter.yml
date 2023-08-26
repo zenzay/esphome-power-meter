@@ -531,8 +531,10 @@ script:
         // energy = delta_hours * (old_state + new_state) / 2.0;    // Trapezoid
         static uint32_t last_pulse_ms = 0;
         const uint32_t now = millis();
-        // we wont process the very first pulse, as we have no idea how long ago the last one was,
-        if (last_pulse_ms == 0) {
+        // turns out the pulse meter manages to trigger two total on_value events before the meter state is published at all
+        // so the two first calls of this script will just return doing nothing
+        // this is a temporary fix as I realise the whole thing needs to be done differently (which I'm currently thinking through in the shower)
+        if (isnan(id(power_pulse_meter).state) {
           last_pulse_ms = now;
           return;
         }
