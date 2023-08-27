@@ -1,4 +1,4 @@
-# Power Meter v0.9.5
+# Power Meter v0.9.7
 #
 # Power Meter with Cost Tracking.
 #
@@ -12,13 +12,11 @@ substitutions:
   ha_price_default: '2'
   ha_price_sensor: 'nordpool_kwh_dk2_dkk_4_095_025'
   update_interval: '60s'
-  internal_interval: '30'
-  flag_update_sensors: '1'
+  interval_interval: '1s'
   flag_reset_monthly: '8'
   flag_reset_daily: '16'
   flag_reset_total: '128'
   flag_reset_mask: '248'
-
 # substitutions:
 #          pulse_rate: Pulse Rate of the LED on your power-panel-meter
 #            currency: Currency in which to represent costs
@@ -35,7 +33,11 @@ esphome:
   comment: 'Power Meter with Cost Tracking'
   project:
     name: zenzay.power_meter
-    version: '0.9.5'
+    version: '0.9.7'
+  on_boot:
+    priority: 600
+    then:
+      - script.execute: set_total_pulses
 
 preferences:
   flash_write_interval: 1h
@@ -92,9 +94,9 @@ globals:
     restore_value: yes
     initial_value: '0'
 
-  - id: cost_now            # hourly cost right now
+  - id: price_kwh_avg       # average kwh price. Will be used if 'Use KwH Price Average' switch is set.
     type: float
-    restore_value: no
+    restore_value: yes
     initial_value: '0'
 
   - id: price_per_kwh       # price per kwh, should be automatically imported from HA, but can also be set manually
@@ -102,22 +104,7 @@ globals:
     restore_value: no
     initial_value: '0'
 
-  - id: price_kwh_avg       # average kwh price. Will be used if 'Use KwH Price Average' switch is set.
-    type: float
-    restore_value: yes
-    initial_value: '0'
-
-  - id: usage_day_avg
-    type: float
-    restore_value: yes
-    initial_value: '0'
-
-  - id: cost_day_avg
-    type: float
-    restore_value: yes
-    initial_value: '0'
-
-  - id: uptime_start        # uptime start timestamp
+  - id: uptime_start_ts     # uptime start timestamp
     type: int
     restore_value: no
     initial_value: '0'
@@ -141,6 +128,9 @@ number:
     initial_value: 1000
     restore_value: true
     entity_category: 'config'
+    on_value:
+      lambda: |-
+        id(set_total_pulses).execute();
 
   - platform: template
     name: 'Set Total Usage'
@@ -186,9 +176,8 @@ number:
     entity_category: 'config'
     on_value:
       lambda: |-
-        id(uptime_start) = 0;
+        id(uptime_start_ts) = 0;
         id(uptime_days) = x;
-        //id(uptime_secs) = ceil(x * 60.0f * 60.0f * 24.0f);
 
   - platform: template
     name: 'Set kWh Price'
@@ -240,12 +229,6 @@ switch:
     icon: "mdi:toggle-switch-outline"
     optimistic: True
     entity_category: 'config'
-    turn_on_action:
-      - lambda: |-
-          id(op_flag) |= $flag_update_sensors;
-    turn_off_action:
-      - lambda: |-
-          id(op_flag) |= $flag_update_sensors;
 
 button:
   - platform: template
@@ -262,15 +245,6 @@ button:
       lambda: |-
         id(price_kwh_avg) = 0;
         id(update_price_kwh_avg).execute();
-
-  - platform: template
-    name: 'Sync Monthly to Total'
-    disabled_by_default: true
-    entity_category: 'config'
-    on_press:
-      lambda: |-
-        id(cost_month) = id(cost_total);
-        id(usage_month) = id(usage_total);
 
   - platform: shutdown
     name: 'Shutdown'
@@ -305,21 +279,32 @@ sensor:
     internal_filter_mode: EDGE
     internal_filter: 100ms
     filters:
-      - lambda: return x * (60.0f / id(pulse_rate).state ) * 1000.0f;
+      - lambda: return x * 60.0f * ( id(pulse_rate).state / 1000.0f );
+    on_value:
+      lambda: |-
+        if (id(power_led).current_values.is_on()) {
+          id(set_power_led_script).execute();
+        }
     total:
       id: power_pulse_total
+      name: "Usage Total"
+      icon: mdi:meter-electric
+      state_class: total_increasing
+      device_class: energy
+      unit_of_measurement: 'kWh'
+      accuracy_decimals: 3
+      filters:
+        lambda: return x / id(pulse_rate).state;
       on_value:
-        script.execute: process_power_script
-
-  - platform: template
-    name: 'Usage Total'
-    id: usage_total_sensor
-    unit_of_measurement: 'kWh'
-    icon: mdi:meter-electric
-    state_class: total_increasing
-    device_class: energy
-    accuracy_decimals: 3
-    update_interval: never
+        lambda: |-
+          const float energy = 1 / id(pulse_rate).state;
+          const float cost = energy * id(price_per_kwh);
+          id(usage_total) += energy;
+          id(usage_day) += energy;
+          id(usage_month) += energy;
+          id(cost_total) += cost;
+          id(cost_day) += cost;
+          id(cost_month) += cost;
 
   - platform: template
     name: 'Usage Daily'
@@ -350,7 +335,23 @@ sensor:
     accuracy_decimals: 3
     unit_of_measurement: '${currency}/h'
     device_class: monetary
-    update_interval: never
+    update_interval: 5s
+    lambda: |-
+      float watt = id(power_pulse_meter).state;
+      static float prev = -1;
+      if ( isnan(watt) ) {
+        watt = 0;
+      }
+      if (watt == prev) {
+        return {};
+      } else {
+        prev = watt;
+        if ( id(use_kwh_price_average).state ) {
+          return id(price_kwh_avg) / 1000 * watt;
+        } else {
+          return id(price_per_kwh) / 1000 * watt;
+        }
+      }
 
   - platform: template
     name: 'kWh Price Average'
@@ -368,7 +369,13 @@ sensor:
     unit_of_measurement: $currency
     accuracy_decimals: 3
     device_class: monetary
-    update_interval: never
+    update_interval: $update_interval
+    lambda: |-
+      if (id(use_kwh_price_average).state) {
+        return id(price_kwh_avg) * id(usage_total);
+      } else {
+        return id(cost_total);
+      }
 
   - platform: template
     name: 'Cost Daily'
@@ -408,7 +415,12 @@ sensor:
     unit_of_measurement: $currency
     device_class: monetary
     update_interval: $update_interval
-    lambda: return id(cost_day_avg);
+    lambda:
+      if (id(uptime_days) < 1) {
+        return id(cost_day);
+      } else {
+        return id(cost_total) / id(uptime_days);
+      }
 
   - platform: template
     name: 'Usage Daily Average'
@@ -418,7 +430,12 @@ sensor:
     unit_of_measurement: 'kWh'
     device_class: energy
     update_interval: $update_interval
-    lambda: return id(usage_day_avg);
+    lambda:
+      if (id(uptime_days) < 1) {
+        return id(usage_day);
+      } else {
+        return id(usage_total) / id(uptime_days);
+      }
 
   - platform: template
     name: 'Uptime'
@@ -434,15 +451,20 @@ time:
     id: esp_time
 
 interval:
-  - interval: 1s
+  - interval: $interval_interval
     then:
       lambda: |-
-        static uint32_t update_count = 0;
         static uint32_t last_day_of_year = 0;
         static uint32_t last_month = 0;
         auto time = id(esp_time).now();
+        const float uptime_secs = id(uptime_days) * 60.0f * 60.0f * 24.0f;
         if ( time.is_valid() )
         {
+          if ( id(uptime_start_ts) == 0 ) {
+            id(uptime_start_ts) = time.timestamp - uptime_secs;
+          } else if ( ( time.timestamp - id(uptime_start_ts) ) > uptime_secs ) {
+            id(uptime_days) = (time.timestamp - id(uptime_start_ts)) / 60.0f / 60.0f / 24.0f;
+          }
           if ( time.day_of_year != last_day_of_year ) {
             if (last_day_of_year != 0) {
               id(op_flag) |= $flag_reset_daily;
@@ -458,53 +480,32 @@ interval:
         }
         if ( id(op_flag) & $flag_reset_total ) {
           //ESP_LOGD("debug", "reset total");
-          id(uptime_start) = 0;
+          id(uptime_start_ts) = 0;
           id(uptime_days) = 0;
           id(usage_total) = 0;
           id(cost_total) = 0;
-          id(cost_now) = 0;
-          update_count = 0;
+          id(set_total_pulses).execute();
         }
         if ( id(op_flag) & $flag_reset_daily ) {
           //ESP_LOGD("debug", "reset daily");
           id(usage_day) = 0;
           id(cost_day) = 0;
-          update_count = 0;
         }
         if ( id(op_flag) & $flag_reset_monthly ) {
           //ESP_LOGD("debug", "reset monthly");
           id(usage_month) = 0;
           id(cost_month) = 0;
-          update_count = 0;
-        }
-        if ( time.is_valid() ) {
-          if (update_count == 0) {
-            id(op_flag) |= $flag_update_sensors;
-          }
-          update_count++;
-          if ( update_count >= $internal_interval ) {
-            update_count = 0;
-          }
-          if ( id(op_flag) & $flag_update_sensors ) {
-            const float uptime_secs = id(uptime_days) * 60.0f * 60.0f * 24.0f;
-            if ( id(uptime_start) == 0 ) {
-              id(uptime_start) = time.timestamp - uptime_secs;
-            }
-            else if ( ( time.timestamp - id(uptime_start) ) > uptime_secs ) {
-              id(uptime_days) = (time.timestamp - id(uptime_start)) / 60.0f / 60.0f / 24.0f;
-            }
-            if (id(uptime_days) < 1) {
-              id(usage_day_avg) = id(usage_day);
-              id(cost_day_avg) = id(cost_day);
-            } else {
-              id(usage_day_avg) = id(usage_total) / id(uptime_days);
-              id(cost_day_avg) = id(cost_total) / id(uptime_days);
-            }
-          }
         }
         id(op_flag) = 0;         // making sure the flag operations are one-shot
 
 script:
+  - id: set_total_pulses
+    mode: single
+    then:
+      - pulse_meter.set_total_pulses:
+          id: power_pulse_meter
+          value: !lambda 'return id(usage_total) * id(pulse_rate).state;'
+
   - id: update_price_kwh_avg
     mode: single
     then:
@@ -517,44 +518,6 @@ script:
         id(price_kwh_avg) += (id(price_per_kwh) - id(price_kwh_avg)) / count;
         id(kwh_price_average).publish_state(id(price_kwh_avg));
 
-  - id: process_power_script
-    mode: single
-    then:
-      lambda: |-
-        const float energy = 1 / id(pulse_rate).state;
-        const float cost = energy * id(price_per_kwh);
-        
-        id(usage_total) += energy;
-        id(usage_day) += energy;
-        id(usage_month) += energy;
-        id(cost_total) += cost;
-        id(cost_day) += cost;
-        id(cost_month) += cost;
-
-        if ( isnan(id(power_pulse_meter).state) ) {
-          return;
-        }
-        const kwh_use = id(power_pulse_meter).state / 1000.0f
-        if (id(use_kwh_price_average).state) {
-          id(cost_now) = kwh_use * id(price_kwh_avg);
-        } else {
-          id(cost_now) = kwh_use * id(price_per_kwh);
-        }
-        // publish states to the sensors we want 'live' updates on (the rest can wait for the update_interval)
-        id(cost_now_sensor).publish_state(id(cost_now));
-        id(usage_total_sensor).publish_state(id(usage_total));
-
-        if (id(use_kwh_price_average).state) {
-          id(cost_total_sensor).publish_state( id(price_kwh_avg) * id(usage_total));
-        } else {
-          id(cost_total_sensor).publish_state(id(cost_total));
-        }
-
-        // if LED is on, set the color
-        if (id(power_led).current_values.is_on()) {
-          id(set_power_led_script).execute();
-        }
-
   - id: set_power_led_script
     mode: restart
     then:
@@ -563,7 +526,11 @@ script:
         const float v = 0.5;    // brightness. [0-1]
         int i;
         float r, g, b, f, h, p, q, t;
-        f = id(power_pulse_meter).state * 100 / id(power_problem_level).state;
+        if (isnan( id(power_pulse_meter).state ) ) {
+          f = 0;
+        } else {
+          f = id(power_pulse_meter).state * 100 / id(power_problem_level).state;
+        }
         if (f < 100) {
           h = 130 - f;    // orange to green
         } else {
@@ -582,7 +549,8 @@ script:
         p = v * ( 1 - s );
         q = v * ( 1 - s * f );
         t = v * ( 1 - s * ( 1 - f ) );
-        switch( i ) {
+        switch( i )
+        {
           case 0:
             r = v;
             g = t;
@@ -618,4 +586,3 @@ script:
         //call.set_brightness(0.4);
         call.set_rgb(r, g, b);
         call.perform();
-
