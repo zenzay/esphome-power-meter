@@ -9,7 +9,6 @@ substitutions:
   currency: 'DKK'
   pulse_pin: '26'
   led_pin: '17'
-  ha_price_default: '2'
   ha_price_sensor: 'nordpool_kwh_dk2_dkk_4_095_025'
   update_interval: '60s'
   interval_interval: '1s'
@@ -24,8 +23,7 @@ substitutions:
 #             led_pin: GPIO pin for the LED
 #     ha_price_sensor: entity_id of the sensor used in Home Assistant to track spot prices.
 #     update_interval: Seconds (ticks in 1s interval loop) between updating sensors.
-#
-# Note: The flag* substitutions are instead of #defines.
+#   interval_interval: The interval of the Interval: component
 
 esphome:
   name: power-meter
@@ -479,7 +477,6 @@ interval:
           }
         }
         if ( id(op_flag) & $flag_reset_total ) {
-          //ESP_LOGD("debug", "reset total");
           id(uptime_start_ts) = 0;
           id(uptime_days) = 0;
           id(usage_total) = 0;
@@ -487,12 +484,10 @@ interval:
           id(set_total_pulses).execute();
         }
         if ( id(op_flag) & $flag_reset_daily ) {
-          //ESP_LOGD("debug", "reset daily");
           id(usage_day) = 0;
           id(cost_day) = 0;
         }
         if ( id(op_flag) & $flag_reset_monthly ) {
-          //ESP_LOGD("debug", "reset monthly");
           id(usage_month) = 0;
           id(cost_month) = 0;
         }
