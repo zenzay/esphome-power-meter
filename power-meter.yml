@@ -10,6 +10,7 @@ substitutions:
   pulse_pin: '26'
   led_pin: '17'
   ha_price_sensor: 'nordpool_kwh_dk2_dkk_4_095_025'
+  ha_price_default: '2'
   update_interval: '60s'
   interval_interval: '1s'
   flag_reset_monthly: '8'
