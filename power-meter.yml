@@ -1,4 +1,4 @@
-# Power Meter v0.9.7
+# Power Meter v0.9.8
 #
 # Power Meter with Cost Tracking.
 #
@@ -9,14 +9,15 @@ substitutions:
   currency: 'DKK'
   pulse_pin: '26'
   led_pin: '17'
-  ha_price_sensor: 'nordpool_kwh_dk2_dkk_4_095_025'
   ha_price_default: '2'
+  ha_price_sensor: 'nordpool_kwh_dk2_dkk_4_095_025'
   update_interval: '60s'
   interval_interval: '1s'
   flag_reset_monthly: '8'
   flag_reset_daily: '16'
   flag_reset_total: '128'
   flag_reset_mask: '248'
+
 # substitutions:
 #          pulse_rate: Pulse Rate of the LED on your power-panel-meter
 #            currency: Currency in which to represent costs
@@ -24,7 +25,6 @@ substitutions:
 #             led_pin: GPIO pin for the LED
 #     ha_price_sensor: entity_id of the sensor used in Home Assistant to track spot prices.
 #     update_interval: Seconds (ticks in 1s interval loop) between updating sensors.
-#   interval_interval: The interval of the Interval: component
 
 esphome:
   name: power-meter
@@ -32,11 +32,7 @@ esphome:
   comment: 'Power Meter with Cost Tracking'
   project:
     name: zenzay.power_meter
-    version: '0.9.7'
-  on_boot:
-    priority: 600
-    then:
-      - script.execute: set_total_pulses
+    version: '0.9.8'
 
 preferences:
   flash_write_interval: 1h
@@ -127,9 +123,6 @@ number:
     initial_value: 1000
     restore_value: true
     entity_category: 'config'
-    on_value:
-      lambda: |-
-        id(set_total_pulses).execute();
 
   - platform: template
     name: 'Set Total Usage'
@@ -286,14 +279,6 @@ sensor:
         }
     total:
       id: power_pulse_total
-      name: "Usage Total"
-      icon: mdi:meter-electric
-      state_class: total_increasing
-      device_class: energy
-      unit_of_measurement: 'kWh'
-      accuracy_decimals: 3
-      filters:
-        lambda: return x / id(pulse_rate).state;
       on_value:
         lambda: |-
           const float energy = 1 / id(pulse_rate).state;
@@ -304,6 +289,17 @@ sensor:
           id(cost_total) += cost;
           id(cost_day) += cost;
           id(cost_month) += cost;
+          id(usage_total_sensor).publish_state(id(usage_total));
+
+  - platform: template
+    name: 'Usage Total'
+    id: usage_total_sensor
+    unit_of_measurement: 'kWh'
+    icon: mdi:meter-electric
+    state_class: total_increasing
+    device_class: energy
+    accuracy_decimals: 3
+    update_interval: never
 
   - platform: template
     name: 'Usage Daily'
@@ -478,30 +474,25 @@ interval:
           }
         }
         if ( id(op_flag) & $flag_reset_total ) {
+          //ESP_LOGD("debug", "reset total");
           id(uptime_start_ts) = 0;
           id(uptime_days) = 0;
           id(usage_total) = 0;
           id(cost_total) = 0;
-          id(set_total_pulses).execute();
         }
         if ( id(op_flag) & $flag_reset_daily ) {
+          //ESP_LOGD("debug", "reset daily");
           id(usage_day) = 0;
           id(cost_day) = 0;
         }
         if ( id(op_flag) & $flag_reset_monthly ) {
+          //ESP_LOGD("debug", "reset monthly");
           id(usage_month) = 0;
           id(cost_month) = 0;
         }
         id(op_flag) = 0;         // making sure the flag operations are one-shot
 
 script:
-  - id: set_total_pulses
-    mode: single
-    then:
-      - pulse_meter.set_total_pulses:
-          id: power_pulse_meter
-          value: !lambda 'return id(usage_total) * id(pulse_rate).state;'
-
   - id: update_price_kwh_avg
     mode: single
     then:
