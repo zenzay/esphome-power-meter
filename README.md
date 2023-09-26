@@ -20,7 +20,7 @@ To test the accuracy of the Power Meter, I created a simple Arduino Sketch to si
 
 * This was made just for fun, to see what you could accomplish in an ESPHome configuration, using Globals and Lambdas *all over the place*.
 * If this was to have any proper value, it should probably be in the form of a ESPHome Custom Component.
-* This hasn't been tested extensively and I take absolutely no responsibility for any suprisingly large electricity bills.
+* I take absolutely no responsibility for any suprisingly large electricity bills.
 
 
 ## Device Sensors and Configuration ##
