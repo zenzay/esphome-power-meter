@@ -3,7 +3,7 @@ ESPHome Power Meter
 
 ### A Power Meter for use in [Home Assistant](https://www.home-assistant.io/), using the [Pulse Meter](https://esphome.io/components/sensor/pulse_meter.html) component in [ESPHome](https://esphome.io/), with the added functionally of tracking costs. ###
 
-I've used [Home Assistant Glow](https://github.com/klaasnicolaas/home-assistant-glow) for a while without problems.Home Assistant Glow makes a (not so) smart meter without a P1 port easily readable, reading the pulse LED that is present in most cases.
+I've used [Home Assistant Glow](https://github.com/klaasnicolaas/home-assistant-glow) for a while without problems. Home Assistant Glow makes a (not so) smart meter without a P1 port easily readable, reading the pulse LED that is present in most cases.
 
 I decided that it would be cool to also have the ESP track costs as well. That way I could do away with Rieman Sum and Utility Meter integrations in HA. This is the result of having that initial idea and a lot of hammering on the keyboard.
 
