@@ -47,7 +47,8 @@ logger:
 api:
 
 ota:
-  password: !secret ota_password_power_meter
+  - platform: esphome
+    password: !secret ota_password_power_meter
 
 wifi:
   ssid: !secret wifi_ssid
