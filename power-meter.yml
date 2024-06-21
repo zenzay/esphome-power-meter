@@ -32,7 +32,7 @@ esphome:
   comment: 'Power Meter with Cost Tracking'
   project:
     name: zenzay.power_meter
-    version: '0.9.8'
+    version: '0.9.8.1'
 
 preferences:
   flash_write_interval: 1h
