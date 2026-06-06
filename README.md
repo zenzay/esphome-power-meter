@@ -7,7 +7,7 @@ I've used [Home Assistant Glow](https://github.com/klaasnicolaas/home-assistant-
 
 I decided that it would be cool to also have the ESP track costs as well. That way I could do away with Rieman Sum and Utility Meter integrations in HA. This is the result of having that initial idea and a lot of hammering on the keyboard.
 
-The kWh price is imported as a sensor from Home Assistant, which is running the [Nordpool Custom Component](https://github.com/custom-components/nordpool), but the price can also be set 'manually' with a Number component. Ideally the price should be fetched directly from NordPool using their API.
+The kWh price is imported as a sensor from Home Assistant, which is running the [Stromligning Custom Component](https://github.com/MTrab/stromligning), by MTrab, but the price can also be set 'manually' with a Number component. Ideally the price should probably be fetched directly from Strømligning.dk using their API.
 
 I've added a method to track the Average kWh Price and an option to use it when reporting costs. It will still track the 'real' costs and you can toggle between the two. Remember to push the **Reset kWh Price Average** button at the start of the billing period.
 
@@ -48,10 +48,4 @@ Wiring
 |   VCC  |  VCC  |
 |   GND  |  GND  |
 
-#### WS2818 LED ####
-| LED  | ESP32 |
-|-----:|-------|
-|   D0 |   17  |
-|  VCC |  VCC  |
-|  GND |  GND  |
 
